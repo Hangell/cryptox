@@ -20,3 +20,6 @@ It provides simple wrappers around modern symmetric cryptography primitives (AES
 ```bash
 go get github.com/Hangell/cryptox
 ```
+
+
+email: rodrigo@hangell.org
