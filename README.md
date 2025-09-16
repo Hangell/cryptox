@@ -3,6 +3,7 @@
 [![Go Version](https://img.shields.io/badge/go-%3E%3D1.19-blue)](https://golang.org/)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![Go Report Card](https://goreportcard.com/badge/github.com/Hangell/cryptox)](https://goreportcard.com/report/github.com/Hangell/cryptox)
+![Work in Progress](https://img.shields.io/badge/work--in--progress-⚠️-red)
 
 > Uma biblioteca Go leve e eficiente para criptografia simétrica de arquivos grandes, com suporte a streaming e processamento em chunks.
 
