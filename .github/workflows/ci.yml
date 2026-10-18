@@ -40,7 +40,7 @@ jobs:
           cache: false
       - name: Check formatting
         run: |
-          unformatted=$(gofmt -l keys stream utils)
+          unformatted=$(gofmt -l $(git ls-files '*.go'))
           if [ -n "$unformatted" ]; then
             printf '%s\n' "$unformatted"
             exit 1
