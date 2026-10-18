@@ -16,6 +16,10 @@ FUZZ_PARALLEL ?= 2
 # Keep this pin aligned with the reviewed version used in CI.
 GOVULNCHECK_VERSION := v1.9.0
 
+# Keep this pin aligned with the version installed in CI.
+GOLANGCI_LINT_VERSION ?= v2.15.0
+LINT ?= golangci-lint
+
 REPORT_DIR := .reports
 COVERAGE_FILE := $(REPORT_DIR)/coverage.out
 
@@ -24,7 +28,7 @@ FIND_GO = find . -type d \( -name .git -o -name vendor -o -name .reports \) -pru
 	-o -type f -name '*.go'
 
 .PHONY: help fmt fmt-check vet mod-verify test test-fast coverage-html \
-	fuzz security check ci bench clean
+	lint lint-install fuzz security check ci bench clean
 
 help: ## List available targets.
 	@awk 'BEGIN {FS = ":.*## "} /^[a-zA-Z_-]+:.*## / {printf "%-18s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -46,6 +50,17 @@ vet: ## Run Go static analysis.
 
 mod-verify: ## Verify downloaded module-cache integrity.
 	$(GO) mod verify
+
+lint: ## Run golangci-lint static analysis.
+	@command -v $(LINT) >/dev/null 2>&1 || { \
+		printf '%s\n' 'golangci-lint not found. Install it with:'; \
+		printf '%s\n' '  go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION)'; \
+		exit 1; \
+	}
+	$(LINT) run
+
+lint-install: ## Install golangci-lint at the pinned version.
+	$(GO) install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION)
 
 test-fast: ## Run tests without race detection or coverage.
 	$(GO) test -count=1 -timeout=$(TEST_TIMEOUT) $(PACKAGES)
@@ -86,7 +101,7 @@ security: ## Check known vulnerabilities, including test dependencies.
 
 check: fmt-check vet mod-verify test ## Run local quality checks.
 
-ci: check security fuzz ## Run quality checks, vulnerability scan and fuzzing.
+ci: check lint security fuzz ## Run quality checks, linting, vulnerability scan and fuzzing.
 
 bench: ## Run benchmarks without race or coverage instrumentation.
 	$(GO) test -run='^$$' -bench=. -benchmem -count=3 $(PACKAGES)

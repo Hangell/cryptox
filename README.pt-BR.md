@@ -30,7 +30,7 @@ Hoje, o CryptoX serve para avaliar a arquitetura, estudar o formato existente e 
 
 As APIs públicas recebem caminhos de arquivos. APIs públicas `io.Reader`/`io.Writer`, término autenticado, HKDF, envelopes, armazenamento seguro, identidades, ratchets, proteção contra replay, bindings mobile e suporte pós-quântico **não estão implementados**.
 
-O código declara Go 1.19 como nível mínimo de compatibilidade. Use uma versão mantida do Go para desenvolver e executar aplicações; compatibilidade mínima de código não é recomendação de segurança. O núcleo não exige CGO, mas `go test -race` exige plataforma compatível e toolchain C.
+O código declara Go 1.26 como nível mínimo de compatibilidade. Use uma versão mantida do Go para desenvolver e executar aplicações; compatibilidade mínima de código não é recomendação de segurança. O núcleo não exige CGO, mas `go test -race` exige plataforma compatível e toolchain C.
 
 ## Instalação
 
@@ -205,7 +205,7 @@ go run golang.org/x/vuln/cmd/govulncheck@v1.9.0 ./...
 
 Os testes cobrem as quatro funções de `utils`, tamanhos de chave AES, limites de chunks, chaves incorretas, cabeçalhos/comprimentos malformados, chunks modificados/reordenados, leituras fragmentadas, escritas curtas, propagação de erros, limpeza de temporários e preservação do destino. Casos paralelos usam arquivos independentes. Também há testes que registram a limitação de truncamento do v1. O fuzzing verifica invariantes de falha, não apenas ausência de panic.
 
-O [workflow CI](.github/workflows/ci.yml) está configurado para pushes, pull requests, execução manual e semanal. Define jobs Linux/Windows/macOS com Go `stable`, jobs adicionais Linux com `oldstable` e `1.19.13`, artefatos de cobertura e JSON, fuzzing e `govulncheck`. Configuração não comprova sucesso remoto: consulte a execução do seu commit. Cobertura e testes aprovados não substituem revisão criptográfica independente.
+O [workflow CI](.github/workflows/ci.yml) está configurado para pushes, pull requests, execução manual e semanal. Define jobs Linux/Windows/macOS com Go `stable`, job adicional Linux com `oldstable`, artefatos de cobertura e JSON, fuzzing e `govulncheck`. Configuração não comprova sucesso remoto: consulte a execução do seu commit. Cobertura e testes aprovados não substituem revisão criptográfica independente.
 
 ## Documentação e contribuição
 

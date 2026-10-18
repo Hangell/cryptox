@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"sync"
 	"testing"
 )
 
@@ -196,4 +197,51 @@ func TestPublishFailureCleanup(t *testing.T) {
 			}
 		})
 	}
+}
+
+// TestFilesConcurrent runs independent encrypt/decrypt round trips in parallel.
+// It is intended to run under the race detector via `make test`.
+func TestFilesConcurrent(t *testing.T) {
+	const goroutines = 16
+
+	var wg sync.WaitGroup
+	wg.Add(goroutines)
+	for g := 0; g < goroutines; g++ {
+		go func(g int) {
+			defer wg.Done()
+
+			dir := t.TempDir()
+			input := filepath.Join(dir, "input")
+			encrypted := filepath.Join(dir, "encrypted")
+			output := filepath.Join(dir, "output")
+
+			key := make([]byte, 32)
+			for i := range key {
+				key[i] = byte(g) ^ byte(i)
+			}
+			data := bytes.Repeat([]byte{byte(g), 0x5a}, chunkSize+g)
+
+			if err := os.WriteFile(input, data, 0600); err != nil {
+				t.Error(err)
+				return
+			}
+			if err := EncryptLargeFiles(input, encrypted, key); err != nil {
+				t.Error(err)
+				return
+			}
+			if err := DecryptLargeFiles(encrypted, output, key); err != nil {
+				t.Error(err)
+				return
+			}
+			got, err := os.ReadFile(output)
+			if err != nil {
+				t.Error(err)
+				return
+			}
+			if !bytes.Equal(got, data) {
+				t.Error("round trip mismatch")
+			}
+		}(g)
+	}
+	wg.Wait()
 }

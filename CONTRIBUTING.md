@@ -31,12 +31,15 @@ Run from the repository root:
 
 ```sh
 make check
+make lint
 make fuzz
 ```
 
 `make check` verifies formatting, runs `go vet`, and runs tests with race detection
-and coverage. `make fuzz` runs the existing legacy-format fuzz target for 30 seconds.
-See [README.md](README.md) for direct Go commands and vulnerability analysis.
+and coverage. `make lint` runs golangci-lint with the configuration in
+`.golangci.yml`; install it first with `make lint-install`. `make fuzz` runs the
+existing legacy-format fuzz target for 30 seconds. See [README.md](README.md) for
+direct Go commands and vulnerability analysis.
 
 For documentation-only changes, check relative links, examples, and consistency
 across translations; new tests or repeated fuzzing are not required without a
@@ -44,8 +47,10 @@ behavioral change. Compile and run code examples when they change.
 
 The configured CI targets Linux, Windows, and macOS and publishes test reports.
 Configuration alone does not prove remote success or enforce branch protection.
-Go 1.19 is the minimum source compatibility level; use a maintained toolchain in
-real applications. Race detection requires a supported platform and C toolchain.
+Go 1.26 is the minimum source compatibility level; use a maintained toolchain in
+real applications. The floor tracks the oldest Go release still receiving security
+patches and should be raised when the support window moves. Race detection
+requires a supported platform and C toolchain.
 
 ## Describe and submit
 

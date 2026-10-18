@@ -30,7 +30,7 @@ Today, CryptoX is useful for evaluating the architecture, studying the existing 
 
 The public APIs currently accept file paths. Public `io.Reader`/`io.Writer` APIs, authenticated stream termination, HKDF, envelopes, secure storage, identities, ratchets, replay protection, mobile bindings, and post-quantum support are **not implemented**.
 
-The source declares Go 1.19 as its minimum compatibility level. Use a maintained Go toolchain for development and deployment; minimum source compatibility is not a security recommendation. The library core does not require CGO, but `go test -race` requires a supported platform and C toolchain.
+The source declares Go 1.26 as its minimum compatibility level. Use a maintained Go toolchain for development and deployment; minimum source compatibility is not a security recommendation. The library core does not require CGO, but `go test -race` requires a supported platform and C toolchain.
 
 ## Installation
 
@@ -205,7 +205,7 @@ go run golang.org/x/vuln/cmd/govulncheck@v1.9.0 ./...
 
 Tests cover the four `utils` functions, AES key lengths, chunk boundaries, wrong keys, malformed headers/lengths, modified/reordered chunks, fragmented reads, short writes, error propagation, temporary-file cleanup, and destination preservation. Parallel cases use independent files. Tests also explicitly record the v1 truncation limitation. Fuzzing checks failure invariants, not just absence of panics.
 
-The [CI workflow](.github/workflows/ci.yml) is configured for pushes, pull requests, manual runs, and weekly runs. It defines Linux/Windows/macOS jobs with Go `stable`, additional Linux jobs with `oldstable` and `1.19.13`, coverage and JSON artifacts, fuzzing, and `govulncheck`. Configuration is not proof of remote success: inspect the run for your commit. Coverage and passing tests do not replace independent cryptographic review.
+The [CI workflow](.github/workflows/ci.yml) is configured for pushes, pull requests, manual runs, and weekly runs. It defines Linux/Windows/macOS jobs with Go `stable`, an additional Linux job with `oldstable`, coverage and JSON artifacts, fuzzing, and `govulncheck`. Configuration is not proof of remote success: inspect the run for your commit. Coverage and passing tests do not replace independent cryptographic review.
 
 ## Project documentation and contribution
 

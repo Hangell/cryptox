@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sync"
 	"testing"
 
 	"github.com/Hangell/cryptox/stream"
@@ -168,4 +169,51 @@ func TestLegacyHeaderValidation(t *testing.T) {
 			t.Fatalf("accepted header size %d", size)
 		}
 	}
+}
+
+// TestLegacyAPIConcurrent exercises the legacy facade from concurrent goroutines.
+// It is intended to run under the race detector via `make test`.
+func TestLegacyAPIConcurrent(t *testing.T) {
+	const goroutines = 12
+
+	var wg sync.WaitGroup
+	wg.Add(goroutines)
+	for g := 0; g < goroutines; g++ {
+		go func(g int) {
+			defer wg.Done()
+
+			dir := t.TempDir()
+			input := filepath.Join(dir, "input")
+			encrypted := filepath.Join(dir, "encrypted")
+			output := filepath.Join(dir, "output")
+
+			key := make([]byte, 32)
+			for i := range key {
+				key[i] = byte(g) ^ byte(i)
+			}
+			data := bytes.Repeat([]byte{byte(g), 0x5a}, 4096+g)
+
+			if err := os.WriteFile(input, data, 0600); err != nil {
+				t.Error(err)
+				return
+			}
+			if err := utils.EncryptLargeFiles(input, encrypted, key); err != nil {
+				t.Error(err)
+				return
+			}
+			if err := utils.DecryptLargeFiles(encrypted, output, key); err != nil {
+				t.Error(err)
+				return
+			}
+			got, err := os.ReadFile(output)
+			if err != nil {
+				t.Error(err)
+				return
+			}
+			if !bytes.Equal(got, data) {
+				t.Error("round trip mismatch")
+			}
+		}(g)
+	}
+	wg.Wait()
 }
