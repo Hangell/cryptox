@@ -1,422 +1,224 @@
 # CryptoX
 
-[![Go Version](https://img.shields.io/badge/go-%3E%3D1.19-blue)](https://golang.org/)
-[![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
-[![Go Report Card](https://goreportcard.com/badge/github.com/Hangell/cryptox)](https://goreportcard.com/report/github.com/Hangell/cryptox)
-![Work in Progress](https://img.shields.io/badge/work--in--progress-⚠️-red)
+**A modular cryptographic SDK for Go — under development.**
 
-> Uma biblioteca Go leve e eficiente para criptografia simétrica de arquivos grandes, com suporte a streaming e processamento em chunks.
+[English](README.md) · [Português (Brasil)](README.pt-BR.md) · [简体中文](README.zh-CN.md) · [हिन्दी](README.hi.md) · [Русский](README.ru.md)
 
-## 📋 Sobre
+CryptoX is evolving from a file-encryption utility into a general-purpose cryptographic toolkit. The goal is reusable, auditable components for encryption, key management, encrypted storage, identity, and integrations with established E2EE protocols, independent of cloud vendors, transports, databases, and application frameworks.
 
-CryptoX é uma biblioteca Go especializada em criptografia de arquivos grandes usando **AES-GCM** (Galois/Counter Mode) com processamento em chunks. Ideal para cenários onde você precisa criptografar arquivos grandes sem carregar tudo na memória.
+> **Current status:** the code implements random AES key generation and legacy v1 file encryption. The v1 format authenticates individual chunks, **not the complete file**. It cannot detect removal of trailing chunks. Do not use this implementation where whole-file integrity is required. No independent security audit or production-readiness claim is made.
 
-### Por que usar CryptoX?
+## Why explore CryptoX?
 
-- ✅ **Memória eficiente**: Processa arquivos de qualquer tamanho sem sobrecarregar a RAM
-- ✅ **Segurança robusta**: AES-GCM com autenticação integrada e proteção contra ataques
-- ✅ **Formato versionado**: Permite upgrades futuros sem quebrar dados existentes
-- ✅ **Performance otimizada**: Chunks de 64KB para máxima eficiência
-- ✅ **Operações atômicas**: Usa arquivos temporários para evitar corrupção
+- **Focused packages:** import `keys` and `stream` directly; applications do not need a generic utilities package.
+- **Bounded memory:** file processing uses chunks of up to 64 KiB rather than loading the whole file into RAM.
+- **Small dependency footprint:** the current library uses only Go's standard library, without CGO, mandatory services, or telemetry.
+- **Explicit failure behavior:** malformed inputs and failed authentication return errors; file destinations are published only after the operation succeeds.
+- **Verifiable engineering:** adversarial tests, fuzzing, race detection, static analysis, and a CI configuration are included.
 
-## ✨ Funcionalidades
+Today, CryptoX is useful for evaluating the architecture, studying the existing format, and contributing to its modernization. Future targets include secure attachments, backups, offline storage, service communication, device identity, and E2EE integrations. These are intended use cases, not delivered end-to-end solutions. There are no verified performance comparisons or guarantees of superiority over other libraries.
 
-- 🔐 **Criptografia AES-GCM**: Suporte para AES-128, AES-192 e AES-256
-- 📁 **Processamento em chunks**: Arquivos processados em blocos de 64KB
-- 🔄 **Streaming**: Não carrega arquivos inteiros na memória
-- 🛡️ **Formato seguro**: Cabeçalho com magic bytes, versão e validação
-- 🔑 **Geração de chaves**: Utilitário para gerar chaves criptograficamente seguras
-- ✅ **Validação**: Verifica integridade de arquivos criptografados
-- ⚡ **Performance**: Otimizado para arquivos grandes
+## What exists today?
 
-## 🏗️ Formato do Arquivo
+| Package | Available API | Behavior |
+| --- | --- | --- |
+| `keys` | `GenerateKey(size int) ([]byte, error)` | Generates 16-, 24-, or 32-byte AES keys using `crypto/rand`. |
+| `stream` | `EncryptLargeFiles(infile, outfile string, key []byte) error` | Encrypts a file with AES-GCM in legacy v1 format. |
+| `stream` | `DecryptLargeFiles(infile, outfile string, key []byte) error` | Verifies each chunk and writes the recovered file; cannot verify completeness. |
+| `stream` | `ValidateEncryptedFile(filename string) error` | Checks the header only. It does **not** verify ciphertext or tags. |
+| `utils` | The same four legacy functions | Deprecated compatibility facade delegating to `keys` and `stream`. |
 
-O CryptoX usa um formato proprietário otimizado:
+The public APIs currently accept file paths. Public `io.Reader`/`io.Writer` APIs, authenticated stream termination, HKDF, envelopes, secure storage, identities, ratchets, replay protection, mobile bindings, and post-quantum support are **not implemented**.
 
-```
-[Header - 21 bytes]
-┌─────────┬─────────┬─────────────┬──────────────────┐
-│ Magic   │ Version │ Algorithm   │ Base Nonce       │
-│ "SYM1"  │   0x01  │   "AESG"    │    12 bytes      │
-│ 4 bytes │ 1 byte  │   4 bytes   │                  │
-└─────────┴─────────┴─────────────┴──────────────────┘
+The source declares Go 1.19 as its minimum compatibility level. Use a maintained Go toolchain for development and deployment; minimum source compatibility is not a security recommendation. The library core does not require CGO, but `go test -race` requires a supported platform and C toolchain.
 
-[Chunks]
-┌──────────────┬─────────────────────────────────┐
-│ Chunk Length │ Encrypted Data + GCM Tag        │
-│   4 bytes    │        Variable Size            │
-└──────────────┴─────────────────────────────────┘
+## Installation
+
+### Use the local checkout
+
+To try exactly the implementation described here, point a separate demo module at your CryptoX checkout. Replace `/absolute/path/to/cryptox` with its actual absolute path:
+
+```sh
+mkdir cryptox-demo
+cd cryptox-demo
+go mod init example.com/cryptox-demo
+go mod edit -require=github.com/Hangell/cryptox@v0.0.0
+go mod edit -replace=github.com/Hangell/cryptox=/absolute/path/to/cryptox
 ```
 
-## 🚀 Instalação
+Here, `v0.0.0` is only a local module requirement placeholder; it is not a published release claim. The `replace` directive makes Go use your local files.
 
-```bash
+### Use the remote module
+
+Inside an existing Go module:
+
+```sh
 go get github.com/Hangell/cryptox
 ```
 
-## 📖 Uso
+This downloads the repository version available remotely, **not unpublished local changes**. Confirm that your selected revision contains `keys` and `stream`; package layout and formats may change during modernization. No stable release or current remote CI result is asserted here.
 
-### Importação
+## Example: generate a key, encrypt, validate the header, and decrypt
 
-```go
-import (
-    "github.com/Hangell/cryptox/utils"
-)
-```
-
-### Criptografar um arquivo grande
+Save the following as `main.go` in `cryptox-demo`, then run `go run .`:
 
 ```go
 package main
 
 import (
+    "bytes"
     "fmt"
     "log"
-    
-    "github.com/Hangell/cryptox/utils"
+    "os"
+    "path/filepath"
+
+    "github.com/Hangell/cryptox/keys"
+    "github.com/Hangell/cryptox/stream"
 )
 
 func main() {
-    // Gerar uma chave AES-256 (32 bytes)
-    key, err := utils.GenerateKey(32)
-    if err != nil {
-        log.Fatal("Erro ao gerar chave:", err)
+    if err := run(); err != nil {
+        log.Fatal(err)
     }
-    
-    // Criptografar arquivo
-    err = utils.EncryptLargeFiles("documento.pdf", "documento.pdf.enc", key)
-    if err != nil {
-        log.Fatal("Erro na criptografia:", err)
-    }
-    
-    fmt.Println("Arquivo criptografado com sucesso!")
-    fmt.Printf("Chave (guarde em local seguro): %x\n", key)
 }
-```
 
-### Descriptografar um arquivo
-
-```go
-func main() {
-    // Sua chave (exemplo - use a chave real)
-    key := []byte("sua-chave-de-32-bytes-aqui-123456")
-    
-    // Descriptografar arquivo
-    err := utils.DecryptLargeFiles("documento.pdf.enc", "documento_decrypted.pdf", key)
-    if err != nil {
-        log.Fatal("Erro na descriptografia:", err)
-    }
-    
-    fmt.Println("Arquivo descriptografado com sucesso!")
-}
-```
-
-### Validar arquivo criptografado
-
-```go
-func main() {
-    // Verificar se o arquivo tem formato válido
-    err := utils.ValidateEncryptedFile("documento.pdf.enc")
-    if err != nil {
-        log.Fatal("Arquivo inválido:", err)
-    }
-    
-    fmt.Println("Arquivo válido e pode ser descriptografado!")
-}
-```
-
-### Geração de chaves personalizadas
-
-```go
-// AES-128 (16 bytes)
-key128, err := utils.GenerateKey(16)
-
-// AES-192 (24 bytes)  
-key192, err := utils.GenerateKey(24)
-
-// AES-256 (32 bytes) - Recomendado
-key256, err := utils.GenerateKey(32)
-```
-
-## 🔧 API Reference
-
-### `EncryptLargeFiles(infile, outfile string, key []byte) error`
-
-Criptografa um arquivo usando AES-GCM com processamento em chunks.
-
-**Parâmetros:**
-- `infile`: Caminho do arquivo de entrada
-- `outfile`: Caminho do arquivo criptografado de saída
-- `key`: Chave de criptografia (16, 24 ou 32 bytes)
-
-**Comportamento:**
-- Processa arquivo em chunks de 64KB
-- Usa nonce único para cada chunk
-- Cria arquivo temporário `.part` durante o processo
-- Operação atômica (renomeia apenas se bem-sucedida)
-
-### `DecryptLargeFiles(infile, outfile string, key []byte) error`
-
-Descriptografa um arquivo criado com `EncryptLargeFiles`.
-
-**Parâmetros:**
-- `infile`: Caminho do arquivo criptografado
-- `outfile`: Caminho do arquivo descriptografado de saída  
-- `key`: Chave de descriptografia (mesma usada na criptografia)
-
-**Validações:**
-- Verifica magic bytes, versão e algoritmo
-- Valida integridade de cada chunk
-- Protege contra chunks maliciosamente grandes
-
-### `ValidateEncryptedFile(filename string) error`
-
-Valida se um arquivo tem o formato CryptoX válido sem descriptografar.
-
-**Parâmetros:**
-- `filename`: Caminho do arquivo a ser validado
-
-**Verificações:**
-- Magic bytes ("SYM1")
-- Versão suportada (1)
-- Algoritmo suportado ("AESG")
-- Tamanho mínimo do arquivo
-
-### `GenerateKey(size int) ([]byte, error)`
-
-Gera uma chave criptograficamente segura.
-
-**Parâmetros:**
-- `size`: Tamanho da chave em bytes (16, 24 ou 32)
-
-**Retorna:**
-- Chave aleatória usando `crypto/rand`
-
-## 🔒 Segurança
-
-### Características de Segurança
-
-- ✅ **AES-GCM**: Criptografia autenticada com proteção contra modificação
-- ✅ **Nonces únicos**: Cada chunk usa um nonce derivado diferente
-- ✅ **Contador sequencial**: Previne reutilização de nonces
-- ✅ **Magic bytes**: Detecção de formato incorreto
-- ✅ **Validação de tamanho**: Proteção contra ataques de DoS
-- ✅ **Operações atômicas**: Previne arquivos parcialmente corrompidos
-
-### Detalhes Técnicos
-
-```
-Nonce Structure (12 bytes):
-┌──────────────────┬─────────────────┐
-│ Random (8 bytes) │ Counter (4 bytes│
-└──────────────────┴─────────────────┘
-```
-
-- **Nonce base**: 8 bytes aleatórios + 4 bytes de contador
-- **Chunk size**: 64KB (otimizado para performance)
-- **Overhead por chunk**: 16 bytes (GCM tag)
-- **Tamanho do header**: 21 bytes
-
-## ⚡ Performance
-
-### Benchmarks
-
-```bash
-# Execute os benchmarks
-go test -bench=. ./utils
-
-# Resultados típicos (MacBook Pro M2):
-BenchmarkEncryptLargeFile-8    1000    1.2ms/MB
-BenchmarkDecryptLargeFile-8    1000    1.1ms/MB
-BenchmarkGenerateKey-8         10000   0.1ms/op
-```
-
-### Otimizações
-
-- **Chunks de 64KB**: Equilibrio entre memória e performance
-- **Buffers reutilizáveis**: Reduz alocações de memória
-- **I/O sequencial**: Otimizado para SSDs e HDDs
-- **Validação lazy**: Apenas verifica o necessário
-
-## 🧪 Testes
-
-```bash
-# Executar todos os testes
-go test ./...
-
-# Testes com cobertura
-go test -cover ./utils
-coverage: 95.2% of statements
-
-# Testes de integração
-go test -tags=integration ./...
-
-# Benchmarks
-go test -bench=. ./utils
-```
-
-### Cenários Testados
-
-- ✅ Arquivos pequenos (< 1KB)
-- ✅ Arquivos médios (1MB - 100MB)  
-- ✅ Arquivos grandes (> 1GB)
-- ✅ Arquivos vazios
-- ✅ Chaves de diferentes tamanhos
-- ✅ Arquivos corrompidos
-- ✅ Ataques de modificação
-
-## 📁 Estrutura do Projeto
-
-```
-cryptox/
-├── utils/
-│   ├── aes-utils.go      # Funções principais
-│   └── aes-utils_test.go # Testes
-├── examples/
-│   ├── basic/            # Exemplo básico
-│   ├── batch/            # Processamento em lote
-│   └── secure-backup/    # Backup seguro
-├── docs/
-│   └── security.md       # Documentação de segurança
-├── README.md
-├── LICENSE
-└── go.mod
-```
-
-## 💡 Exemplos Avançados
-
-### Backup Seguro com Rotação de Chaves
-
-```go
-func SecureBackup(files []string, backupDir string) error {
-    // Gera nova chave para este backup
-    key, err := utils.GenerateKey(32)
+func run() error {
+    // Use disposable data: the v1 format lacks whole-file integrity.
+    dir, err := os.MkdirTemp("", "cryptox-demo-*")
     if err != nil {
         return err
     }
-    
-    // Criptografa cada arquivo
-    for _, file := range files {
-        outFile := filepath.Join(backupDir, filepath.Base(file)+".enc")
-        if err := utils.EncryptLargeFiles(file, outFile, key); err != nil {
-            return err
-        }
+    defer os.RemoveAll(dir)
+
+    input := filepath.Join(dir, "message.txt")
+    encrypted := filepath.Join(dir, "message.enc")
+    restored := filepath.Join(dir, "restored.txt")
+    original := []byte("Hello from CryptoX!\n")
+    if err := os.WriteFile(input, original, 0o600); err != nil {
+        return err
     }
-    
-    // Salva chave em local seguro (exemplo: KMS, HSM, etc.)
-    return saveKeySecurely(key)
+
+    // Generate a fresh AES-256 key for this file. Never log it.
+    key, err := keys.GenerateKey(32)
+    if err != nil {
+        return err
+    }
+    if err := stream.EncryptLargeFiles(input, encrypted, key); err != nil {
+        return err
+    }
+    // This checks the header only, not ciphertext integrity.
+    if err := stream.ValidateEncryptedFile(encrypted); err != nil {
+        return err
+    }
+    if err := stream.DecryptLargeFiles(encrypted, restored, key); err != nil {
+        return err
+    }
+    recovered, err := os.ReadFile(restored)
+    if err != nil {
+        return err
+    }
+    // This comparison checks the demo, not the v1 format's security.
+    if !bytes.Equal(original, recovered) {
+        return fmt.Errorf("round-trip mismatch")
+    }
+    fmt.Println("Round trip OK")
+    return nil
 }
 ```
 
-### Processamento em Lote
+Expected output: `Round trip OK`. The example uses disposable files and removes them afterward. Only the demonstration reads the complete small plaintext to compare it; the library processes files incrementally.
 
-```go
-func BatchEncrypt(inputDir, outputDir string, key []byte) error {
-    return filepath.Walk(inputDir, func(path string, info os.FileInfo, err error) error {
-        if err != nil || info.IsDir() {
-            return err
-        }
-        
-        relPath, _ := filepath.Rel(inputDir, path)
-        outPath := filepath.Join(outputDir, relPath+".enc")
-        
-        // Cria diretório se necessário
-        os.MkdirAll(filepath.Dir(outPath), 0755)
-        
-        return utils.EncryptLargeFiles(path, outPath, key)
-    })
-}
+The key remains in memory for this single run. For persistent data, the application must securely retain and recover the key separately; CryptoX currently provides no key store. Losing the key loses access to the data. Never print or commit keys, and do not use passwords directly as AES keys. Password derivation is not implemented. Use a fresh key per v1 file; the API does not enforce this policy.
+
+Existing consumers can still import `github.com/Hangell/cryptox/utils` and call the same function names. New code should use the focused packages. This describes current compatibility, not a promise that legacy APIs will survive future modernization.
+
+## Security boundaries and the legacy format
+
+```text
+Header (21 bytes): "SYM1" | version=1 | "AESG" | base nonce (12 bytes)
+Record: ciphertext length (uint32 LE) | ciphertext | GCM tag (16 bytes)
+Nonce: random prefix (8 bytes) | chunk counter (uint32 LE)
 ```
 
-## 🤝 Contribuição
+The length field includes the GCM tag. The last four nonce bytes in the header must be zero; each record uses its sequential counter. Counters are rejected before exceeding `uint32`, preventing wraparound within a file.
 
-Contribuições são muito bem-vindas! 
+- **Incomplete-file acceptance:** removing complete trailing records can succeed silently. An empty file has no authentication tag and cannot authenticate the key.
+- **Incomplete metadata authentication:** the header is structurally checked but is not fully authenticated as associated data.
+- **Nonce collisions across files:** the random prefix is only 64 bits. Reusing a key across files can lead to prefix collisions. A counter check does not eliminate this risk.
+- **File publication:** unique temporary files are created in the destination directory with Unix mode `0600`; data is synced and the file closed before rename. On failure, cleanup is attempted and the destination is not intentionally replaced. Successful operations can replace an existing output; create the parent directory first and choose paths carefully.
+- **Operating-system limits:** use a trusted destination directory. Windows requires appropriate ACLs; rename atomicity depends on the OS/filesystem. The directory is not synced, so crash durability is not guaranteed. A process crash can leave temporary files behind.
+- **Secret and threat limits:** Go does not guarantee immediate memory erasure. This code does not protect against a compromised process/OS, storage rollback, replay, or metadata analysis, and is not an E2EE protocol.
 
-### Como Contribuir
+AES-GCM alone does not make a file format secure. The replacement format must explicitly authenticate metadata and termination and receive appropriate review; these properties cannot be retroactively attributed to v1.
 
-1. **Fork** o repositório
-2. **Clone** seu fork localmente
-3. **Crie** uma branch para sua feature (`git checkout -b feature/nova-feature`)
-4. **Implemente** sua mudança com testes
-5. **Execute** todos os testes (`go test ./...`)
-6. **Commit** suas mudanças (`git commit -am 'Adiciona nova feature'`)
-7. **Push** para sua branch (`git push origin feature/nova-feature`)
-8. **Abra** um Pull Request
+## Architecture and direction
 
-### Diretrizes
+The design follows modular and hexagonal principles: consumers use focused packages; optional adapters depend on core contracts; the core remains independent of infrastructure. Interfaces are introduced at real boundaries, not for every function.
 
-- Mantenha cobertura de testes > 90%
-- Siga `gofmt` e `golint`
-- Documente funções públicas
-- Adicione benchmarks para novas features
-- Teste com arquivos grandes (> 1GB)
+| Planned component | Responsibility |
+| --- | --- |
+| `aead` | Authenticated encryption and managed nonces. |
+| `keys` expansion | Derivation, purpose separation, lifecycle, and storage integration. |
+| `stream` replacement | Authenticated framing, metadata, ordering, and termination. |
+| `envelope` | Explicitly versioned encrypted-object formats. |
+| `securestorage` | Encrypted state and optional persistence adapters. |
+| `identity` / `pki` | Device identity, signatures, credentials, certificates, and trust validation. |
+| `e2ee` | Adapters for established session/group protocols, selected through review. |
 
-### Áreas para Contribuição
+Candidate technologies in the architecture include ChaCha20-Poly1305, HKDF, X25519, Ed25519, Argon2id, MLS, and reviewed post-quantum mechanisms. They are evaluation candidates, not installed capabilities or a custom protocol recipe. CryptoX will not implement messaging servers, user registration, queues, push delivery, or cloud orchestration.
 
-- [ ] Suporte a outros algoritmos (ChaCha20-Poly1305)
-- [ ] Interface de linha de comando (CLI)
-- [ ] Compressão antes da criptografia
-- [ ] Paralelização de chunks
-- [ ] Suporte a streams de rede
+## Roadmap
 
-## 🐛 Issues & Suporte
+The detailed [ROADMAP.md](ROADMAP.md) defines acceptance gates and these planning targets:
 
-### Problemas Comuns
+| Phase | Target | Goal |
+| --- | --- | --- |
+| 0 | v0.1.0 | Security diagnosis and architecture baseline. |
+| 1 | v0.2.0 | Cryptographic foundation and engineering controls. |
+| 2 | v0.3.0 | Secure streaming and envelopes. |
+| 3 | v0.4.0 | Key management and secure storage. |
+| 4 | v0.5.0 | Identity and device security. |
+| 5 | v0.6.0 | Established E2EE protocol integration. |
+| 6 | v0.7.0 | Cross-platform and mobile integration. |
+| 7 | v0.9.0 | Hardening and independent review. |
+| 8 | v1.0.0 | Validated stable cryptographic core. |
+| 9 | v1.x / v2.x | Advanced cryptography and ecosystem. |
 
-**Q: "Error: key length must be 16, 24, or 32 bytes"**  
-A: Certifique-se de usar uma chave do tamanho correto para AES.
+These are neither published releases nor delivery dates. Existing code and tests do not establish completion of any phase. Encrypted format **v1** is separate from Go module/release **v1.0.0**. The current modernization policy permits documented breaking changes; E2EE and mobile capabilities may remain experimental even after a stable core release.
 
-**Q: "File too short: missing header"**  
-A: O arquivo pode estar corrompido ou não foi criptografado com CryptoX.
+## Tests and CI
 
-**Q: "Decryption failed at chunk X"**  
-A: Chave incorreta ou arquivo modificado. Verifique a integridade.
+Run from the CryptoX repository. The first block uses Make; the second provides direct commands, including vulnerability analysis:
 
-### Reportar Bugs
+```sh
+make check
+make fuzz
+```
 
-[Abra uma issue](https://github.com/Hangell/cryptox/issues/new) com:
+```sh
+go vet ./...
+go test -race -count=1 -coverpkg=./... -coverprofile=coverage.out ./...
+go tool cover -func=coverage.out
+go test ./stream -run='^$' -fuzz=FuzzDecryptV1 -fuzztime=30s -parallel=2
+go run golang.org/x/vuln/cmd/govulncheck@v1.9.0 ./...
+```
 
-- Versão do Go
-- Sistema operacional
-- Tamanho do arquivo
-- Mensagem de erro completa
-- Código para reproduzir (se possível)
+Tests cover the four `utils` functions, AES key lengths, chunk boundaries, wrong keys, malformed headers/lengths, modified/reordered chunks, fragmented reads, short writes, error propagation, temporary-file cleanup, and destination preservation. Parallel cases use independent files. Tests also explicitly record the v1 truncation limitation. Fuzzing checks failure invariants, not just absence of panics.
 
-## 📊 Comparação com Outras Soluções
+The [CI workflow](.github/workflows/ci.yml) is configured for pushes, pull requests, manual runs, and weekly runs. It defines Linux/Windows/macOS jobs with Go `stable`, additional Linux jobs with `oldstable` and `1.19.13`, coverage and JSON artifacts, fuzzing, and `govulncheck`. Configuration is not proof of remote success: inspect the run for your commit. Coverage and passing tests do not replace independent cryptographic review.
 
-| Característica | CryptoX | GPG | age | 7zip |
-|----------------|---------|-----|-----|------|
-| Streaming      | ✅      | ❌   | ❌   | ❌    |
-| Memória baixa  | ✅      | ❌   | ❌   | ❌    |
-| Simplicidade   | ✅      | ❌   | ✅   | ✅    |
-| Performance    | ✅      | ⚠️   | ✅   | ✅    |
-| Go nativo      | ✅      | ❌   | ❌   | ❌    |
+## Project documentation and contribution
 
-## 📄 Licença
+The three primary engineering documents are:
 
-Este projeto está licenciado sob a **Licença MIT** - veja [LICENSE](LICENSE) para detalhes.
+- [AGENTS.md](AGENTS.md): mission, mandatory engineering rules, and acceptance criteria.
+- [ARCHITECTURE.md](ARCHITECTURE.md): target modules, contracts, trust boundaries, and threat model.
+- [ROADMAP.md](ROADMAP.md): priorities, dependencies, milestones, and release gates.
 
-## 👨‍💻 Autor
+[CONTRIBUTING.md](CONTRIBUTING.md) describes contribution checks. [THREAT_MODEL.md](THREAT_MODEL.md) links to the maintained threat model in the architecture document. [SECURITY.md](SECURITY.md) documents current limitations and the vulnerability reporting procedure. Use GitHub private reporting if it is available; otherwise request a confidential channel without publishing sensitive details. The policy does not claim private reporting is enabled or establish a response SLA. Never post secrets or sensitive exploit details publicly.
 
-**Hangell** - [@Hangell](https://github.com/Hangell)
+Contribute small, reviewable changes: inspect the implementation, add regression/adversarial tests before critical fixes, run the checks, and document security assumptions and API/format changes. Use English identifiers and code comments, and Conventional Commits explaining why. Keep all five README translations aligned when behavior changes.
 
-## 🙏 Agradecimentos
+## License
 
-- Equipe Go pela excelente biblioteca `crypto`
-- Comunidade de segurança por reviews e feedback
-- Contribuidores que ajudaram a melhorar o projeto
-
-## ⚠️ Aviso Legal
-
-Esta biblioteca implementa criptografia padrão da indústria, mas:
-
-- ✅ **Use em produção**: Após auditoria de segurança adequada
-- ✅ **Backup das chaves**: Perda da chave = perda dos dados
-- ✅ **Teste thoroughly**: Sempre teste seu cenário específico
-- ⚠️ **Não é um sistema completo**: Para sistemas críticos, considere soluções enterprise
-
----
-
-⭐ **Se este projeto foi útil, considere dar uma estrela!** Isso ajuda outros desenvolvedores a encontrar a biblioteca.
-
-📧 **Dúvidas?** Abra uma issue ou entre em contato!
+[MIT](LICENSE) — Copyright (c) 2025 Rodrigo Rangel.
