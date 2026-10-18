@@ -281,6 +281,17 @@ The remaining target directories do not exist yet. They must be introduced only
 with a clear contract, implementation, and tests — never as empty placeholders.
 This invariant is enforced by `structure_test.go`.
 
+### 4.2 Component disposition (Phase 0)
+
+Every current component has an explicit disposition. The legacy v1 format is
+never promoted to new security guarantees.
+
+| Component | Disposition | Rationale and next step |
+| --- | --- | --- |
+| `keys` | Reuse | `GenerateKey` draws from `crypto/rand` with size validation. Refactor into the target `keys/` subpackages (`generation`, `derivation`, `lifecycle`) in Phase 1. |
+| `stream` (v1 format) | Replace | Lacks whole-file integrity and authenticated termination (CX-V1-001/003/004). Superseded by the v2 format selected in ADR 0002; v1 is never reinterpreted as v2. The reader parser may be adapted only as an isolated legacy reader with explicit no-migration documentation. |
+| `utils` | Remove | Deprecated facade that delegates to `keys` and `stream`. Remove with documented impact after the Phase 1/2 replacements; do not extend its API. |
+
 ---
 
 ## 5. Cryptographic Architecture
