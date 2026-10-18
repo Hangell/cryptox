@@ -1,0 +1,6 @@
+# Keep Go source and module files at LF line endings on every platform.
+# The CI formatting check runs on Windows too, and gofmt reports CRLF files
+# as unformatted.
+*.go text eol=lf
+go.mod text eol=lf
+go.sum text eol=lf
