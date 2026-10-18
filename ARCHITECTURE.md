@@ -263,6 +263,24 @@ Avoid creating empty directories or placeholder abstractions.
 
 The actual package layout may evolve when supported by technical justification and documented architectural decisions.
 
+### 4.1 Current implementation status
+
+As of Phase 0 (2026-10-18), the repository contains three Go packages:
+
+- `keys` — key generation. The target subpackages (`derivation`, `exchange`,
+  `signatures`, `lifecycle`) do not exist yet and will be introduced
+  incrementally in Phase 1 and later.
+- `stream` — the legacy v1 file encryption/decryption and its reader-based
+  parser. The target `framing` and `integrity` subpackages belong to the future
+  v2 format (see the [replacement evaluation gate](#147-replacement-format-evaluation-gate)).
+- `utils` — a deprecated compatibility facade over `keys` and `stream`. It is
+  not part of the target tree and will be removed or replaced with documented
+  impact (see [ADR 0001](docs/adr/0001-legacy-validation.md)).
+
+The remaining target directories do not exist yet. They must be introduced only
+with a clear contract, implementation, and tests — never as empty placeholders.
+This invariant is enforced by `structure_test.go`.
+
 ---
 
 ## 5. Cryptographic Architecture
