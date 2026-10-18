@@ -76,6 +76,35 @@ func TestUndocumentedTopLevelPackages(t *testing.T) {
 	}
 }
 
+// TestComponentDispositionDocumented verifies that ARCHITECTURE.md §4.2 records
+// an explicit disposition for every current package and uses all three
+// disposition keywords. This keeps the documented disposition in sync with the
+// actual component set.
+func TestComponentDispositionDocumented(t *testing.T) {
+	b, err := os.ReadFile("ARCHITECTURE.md")
+	if err != nil {
+		t.Fatal(err)
+	}
+	doc := string(b)
+	section := doc
+	if i := strings.Index(doc, "### 4.2 Component disposition"); i >= 0 {
+		section = doc[i:]
+	} else {
+		t.Fatal("ARCHITECTURE.md is missing section 4.2 Component disposition")
+	}
+
+	for _, p := range currentPackages {
+		if !strings.Contains(section, "`"+p+"`") {
+			t.Errorf("ARCHITECTURE.md §4.2 does not mention package %q", p)
+		}
+	}
+	for _, kw := range []string{"Reuse", "Replace", "Remove"} {
+		if !strings.Contains(section, kw) {
+			t.Errorf("ARCHITECTURE.md §4.2 missing disposition keyword %q", kw)
+		}
+	}
+}
+
 // dirContainsGo reports whether dir or any of its subdirectories contains a
 // .go file.
 func dirContainsGo(dir string) bool {
