@@ -726,6 +726,59 @@ Examples of limitations:
 
 ---
 
+### 14.6 Legacy v1 risk register
+
+Assessment scope: the current `stream` implementation, not a security certification.
+Owner for all entries: project maintainer. P0/P1 are engineering priorities, not
+CVSS scores. Likelihood is expressed through the required conditions rather than
+unsupported numerical estimates. The source and named tests are the evidence.
+
+| ID | Priority / status | Threat, conditions, and impact | Evidence or reproduction | Mitigation and residual work |
+| --- | --- | --- | --- | --- |
+| CX-V1-001 | P0 / Open | An attacker able to edit ciphertext can remove complete trailing records; a shortened plaintext is accepted. | `TestV1TrailingTruncation` in `stream/parser_test.go` accepts only the first record of a two-record fixture. | Do not rely on v1 for whole-file integrity. Replacement requires authenticated termination and total-stream binding. |
+| CX-V1-002 | P0 / Open | Multiple files under the same key use random 64-bit prefixes; a collision reuses chunk nonces and undermines GCM security. Exposure increases with key reuse. | `EncryptLargeFiles` fills only `baseNonce[:8]` from randomness. No probabilistic collision test is claimed. | Fresh key per v1 file is operational guidance, not an enforced guarantee. Replacement must specify key derivation, domain separation, and quantitative usage limits through review. |
+| CX-V1-003 | P1 / Open | An empty/header-only file contains no tag and accepts a valid-length key without proving that it is the correct key. | `TestV1TruncationLimitation` accepts a header-only file; `decryptV1` reaches EOF without calling `Open`. | Require authenticated finalization even for zero-length plaintext. Do not use empty-file success to verify keys. |
+| CX-V1-004 | P1 / Open | Header parsing is not full metadata authentication; future code could incorrectly trust unbound metadata. | `Seal` and `Open` use nil AAD. `TestLegacyHeaderValidation` checks structure, not cryptographic binding. | Authenticate all security-relevant version, suite, and framing metadata in the replacement. Strict parsing remains necessary but insufficient. |
+| CX-V1-005 | P1 / Controlled within tested scope | Hostile length fields, fragmented reads, invalid tags, and short writes may cause parsing errors or incomplete output. | `TestDecryptMalformedRecords`, `TestDecryptFragmentedReader`, `TestDecryptIOErrors`, and `FuzzDecryptV1`. | Bound record allocation and propagate I/O errors. Fuzzing is finite and does not establish resistance to every denial-of-service scenario. |
+| CX-V1-006 | P1 / Partially controlled | Failure after decrypting a prefix can expose temporary plaintext; a crash can leave that file behind. An untrusted directory or compromised process invalidates filesystem assumptions. | `TestFiles`, `TestLegacyAuthenticationFailure`, and `TestPublishFailureCleanup` exercise permissions, failed authentication, and failed publication. | Unique temporary files and Unix `0600`; trusted directories and Windows ACLs are required. Cleanup failures, process crashes, and disk-full behavior need additional review/testing. |
+| CX-V1-007 | P1 / Controlled counter boundary | Counter wraparound would repeat a nonce within one file. | `checkCounter` and `TestCounterBoundary` reject values above `math.MaxUint32`. | This is a boundary-unit test, not a full maximum-size file test. Cryptographic per-key data limits remain a separate replacement-format requirement. |
+| CX-V1-008 | P2 / Open platform limitation | A crash around rename can lose the published directory update; rename atomicity differs across platforms/filesystems. | File adapters sync and close the temporary file but do not sync the directory. No crash-durability test is claimed. | Define supported publication/durability semantics and test interruption behavior; do not promise durable transactions today. |
+| CX-V1-009 | P2 / Explicitly out of current scope | A valid older ciphertext can be replayed or restored, and a compromised process/OS can expose secrets. | No trusted version state, replay protocol, or guaranteed memory erasure exists. | Document application trust boundaries; AEAD alone does not provide rollback protection, E2EE, or OS isolation. |
+
+Tests that reproduce accepted truncation are limitation tests, not evidence that
+the behavior is safe. Controlled entries do not close the open format-level risks.
+A test passing for a known limitation must not be presented as a security fix.
+
+### 14.7 Replacement-format evaluation gate
+
+Before implementing or freezing a replacement, record an ADR evaluating maintained,
+reviewed streaming constructions and implementations. Do not combine candidate
+primitives into a proprietary protocol without the required specialist review.
+The evaluation must address:
+
+1. Authenticated headers, suite/version identifiers, ordering, and termination,
+   including empty streams and removal of any complete suffix (CX-V1-001/003/004).
+2. Nonce/key lifecycle, domain separation, randomness failures, and quantitative
+   limits per key, file, record, and byte count (CX-V1-002/007).
+3. Unambiguous bounded framing, malformed input, unknown versions, and explicit
+   rejection without downgrade or legacy reinterpretation (CX-V1-004/005).
+4. Plaintext-release semantics for file and reader/writer APIs, short I/O, cleanup,
+   destination replacement, crash behavior, and platform assumptions (CX-V1-006/008).
+5. Independent vectors, cross-implementation tests, mutation/property tests,
+   fuzzing, and a review plan; a round trip alone is insufficient evidence.
+6. Maintenance, licensing, dependency costs, supported platforms, and documented
+   alternatives, including the option to adopt an existing format directly.
+7. Explicit migration or no-migration policy for v1, with no claim to recover
+   integrity evidence that legacy ciphertext never contained.
+8. Scope exclusions for replay, rollback, metadata privacy, and compromised
+   endpoints unless a separately reviewed layer supplies them (CX-V1-009).
+
+The next decision is construction selection and specialist review, not approval
+of a new wire format. Phase 0 architecture approval and Phase 1 entry criteria
+remain open in [ROADMAP.md](ROADMAP.md#current-progress).
+
+---
+
 ## 15. Security Testing Architecture
 
 Security testing must be integrated into development.

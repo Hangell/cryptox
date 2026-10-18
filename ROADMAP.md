@@ -950,10 +950,15 @@ coverage is measured by `make check`; do not treat an old percentage as the curr
 status. Phases 1–9 remain not started as milestones, even though some preparatory
 testing and CI work already exists.
 
-The next increment is to complete the v1 risk review: assign identifiers to the
-findings, map each to reproduction/tests and residual risk, and define the
-replacement-format evaluation criteria. Do not implement or freeze a new
-cryptographic composition before its assumptions receive the required review.
+The [v1 risk register](ARCHITECTURE.md#146-legacy-v1-risk-register) now assigns
+CX-V1-001 through CX-V1-009 to findings, evidence, conditions, and residual work.
+The [replacement evaluation gate](ARCHITECTURE.md#147-replacement-format-evaluation-gate)
+defines criteria for construction selection; no replacement format is approved.
+
+The next increment is to compare established streaming constructions and maintained
+implementations in an ADR, then obtain the required review of the chosen assumptions.
+Architecture approval and Phase 1 entry criteria remain open. Do not implement or
+freeze a new cryptographic composition before that review.
 
 ---
 

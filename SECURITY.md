@@ -29,6 +29,9 @@ used where whole-file integrity is required. Planned guarantees in
 - The library does not provide replay protection, storage rollback protection,
   protection from a compromised process/OS, or an E2EE protocol.
 
+The [v1 risk register](ARCHITECTURE.md#146-legacy-v1-risk-register) maps these
+findings to source evidence, tests, mitigations, and residual work.
+
 Tests document these limits; passing tests do not resolve them. A new reviewed
 format is required for complete stream authentication.
 
