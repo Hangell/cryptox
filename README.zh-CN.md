@@ -30,7 +30,7 @@ CryptoX 正从文件加密工具演进为通用密码学工具库。项目旨在
 
 当前公开 API 接收文件路径。公开的 `io.Reader`/`io.Writer` API、流结束认证、HKDF、加密封装、安全存储、身份、棘轮、重放保护、移动端绑定和后量子支持均**尚未实现**。
 
-源码声明的最低兼容级别为 Go 1.19。开发和部署请使用仍受维护的 Go 工具链；最低源码兼容性并非安全建议。库核心不需要 CGO，但 `go test -race` 需要受支持的平台及 C 工具链。
+源码声明的最低兼容级别为 Go 1.26。开发和部署请使用仍受维护的 Go 工具链；最低源码兼容性并非安全建议。库核心不需要 CGO，但 `go test -race` 需要受支持的平台及 C 工具链。
 
 ## 安装
 
@@ -205,7 +205,7 @@ go run golang.org/x/vuln/cmd/govulncheck@v1.9.0 ./...
 
 测试涵盖 `utils` 的四个函数、AES 密钥长度、数据块边界、错误密钥、无效文件头/长度、修改或重排的数据块、分段读取、短写、错误传播、临时文件清理和目标文件保留。并行用例使用独立文件。测试也明确记录了 v1 的截断限制。模糊测试检查失败时必须保持的条件，而不仅仅检查是否发生 panic。
 
-[CI 工作流](.github/workflows/ci.yml) 配置了 push、pull request、手动和每周运行。它定义了使用 Go `stable` 的 Linux/Windows/macOS 任务，以及使用 `oldstable` 和 `1.19.13` 的额外 Linux 任务，并包含覆盖率与 JSON 产物、模糊测试和 `govulncheck`。配置存在不代表远程执行成功：请查看对应提交的运行结果。覆盖率与测试通过不能替代独立密码学审查。
+[CI 工作流](.github/workflows/ci.yml) 配置了 push、pull request、手动和每周运行。它定义了使用 Go `stable` 的 Linux/Windows/macOS 任务，以及使用 `oldstable` 的额外 Linux 任务，并包含覆盖率与 JSON 产物、模糊测试和 `govulncheck`。配置存在不代表远程执行成功：请查看对应提交的运行结果。覆盖率与测试通过不能替代独立密码学审查。
 
 ## 项目文档与贡献
 

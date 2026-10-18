@@ -33,7 +33,7 @@ func EncryptLargeFiles(infile, outfile string, key []byte) (err error) {
 	if err != nil {
 		return fmt.Errorf("failed to open input file: %w", err)
 	}
-	defer in.Close()
+	defer func() { _ = in.Close() }()
 
 	out, err := os.CreateTemp(filepath.Dir(outfile), ".cryptox-*")
 	if err != nil {
@@ -41,7 +41,7 @@ func EncryptLargeFiles(infile, outfile string, key []byte) (err error) {
 	}
 	tmp := out.Name()
 	defer func() {
-		out.Close()
+		_ = out.Close()
 		if err != nil {
 			_ = os.Remove(tmp)
 		}
@@ -129,7 +129,7 @@ func DecryptLargeFiles(infile, outfile string, key []byte) (err error) {
 	if err != nil {
 		return fmt.Errorf("failed to open input file: %w", err)
 	}
-	defer in.Close()
+	defer func() { _ = in.Close() }()
 
 	out, err := os.CreateTemp(filepath.Dir(outfile), ".cryptox-*")
 	if err != nil {
@@ -137,7 +137,7 @@ func DecryptLargeFiles(infile, outfile string, key []byte) (err error) {
 	}
 	tmp := out.Name()
 	defer func() {
-		out.Close()
+		_ = out.Close()
 		if err != nil {
 			_ = os.Remove(tmp)
 		}
@@ -162,7 +162,7 @@ func ValidateEncryptedFile(filename string) error {
 	if err != nil {
 		return fmt.Errorf("failed to open file: %w", err)
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	stat, err := file.Stat()
 	if err != nil {

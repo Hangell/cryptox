@@ -940,15 +940,19 @@ certification. Preparatory work does not satisfy the Phase 0 exit gate by itself
 | Evidence | What it establishes | What remains open |
 | --- | --- | --- |
 | `go.mod`, `keys/keys.go`, `stream/files.go`, `utils/aes-utils.go` | Inventory: one module, standard-library dependencies, key generation, legacy file operations, compatibility facade. | Reviewed replacement format and public core contracts. |
-| `keys/keys_test.go`, `stream/files_test.go`, `stream/parser_test.go`, `utils/aes-utils_test.go` | Executable tests for the implemented baseline, malformed input, I/O failures, facade behavior, and known truncation limits. | Complete security assessment, broader external vectors, and independent review. |
-| `Makefile`, `.github/workflows/ci.yml` | Local checks and configured multiplatform CI, fuzzing, and vulnerability analysis. | Remote results for the published commit and release controls; configuration is not execution evidence. |
+| `keys/keys_test.go`, `stream/files_test.go`, `stream/parser_test.go`, `utils/aes-utils_test.go` | Executable tests for the implemented baseline, malformed input, I/O failures, facade behavior, known truncation limits, and concurrent round trips. | Complete security assessment, broader external vectors, and independent review. |
+| `Makefile`, `.github/workflows/ci.yml`, `.golangci.yml` | Local checks and configured multiplatform CI, fuzzing, linting, and vulnerability analysis. | Remote results for the published commit and release controls; configuration is not execution evidence. |
+| `keys/keys_bench_test.go`, `stream/files_bench_test.go` | Reproducible microbenchmarks for key generation and v1 file operations via `make bench`. | Published performance comparisons and AMD64/ARM64 results with recorded methodology. |
 | `README*.md`, `SECURITY.md` | Implemented features are distinguished from targets; current v1 limits and disclosure procedure are documented. | Resolution of the underlying cryptographic risks. |
 | `ARCHITECTURE.md`, `docs/adr/0001-legacy-validation.md` | Proposed boundaries and a recorded decision for baseline compatibility tests. | Architecture approval, specialist review, and Phase 1 entry requirements. |
 
-No benchmark suite or independent performance comparison is established. Test
-coverage is measured by `make check`; do not treat an old percentage as the current
-status. Phases 1–9 remain not started as milestones, even though some preparatory
-testing and CI work already exists.
+A reproducible benchmark suite exists (`make bench`), but no performance
+comparison or benchmark results are published yet. Test coverage is measured by
+`make check`; do not treat an old percentage as the current status. The minimum
+Go version was raised to 1.26, the oldest release still receiving security
+patches at the time of this change, so the CI no longer builds an end-of-life
+toolchain. Phases 1–9 remain not started as milestones, even though some
+preparatory testing, linting, and CI work already exists.
 
 The [v1 risk register](ARCHITECTURE.md#146-legacy-v1-risk-register) now assigns
 CX-V1-001 through CX-V1-009 to findings, evidence, conditions, and residual work.

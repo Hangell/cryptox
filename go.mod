@@ -1,3 +1,3 @@
 module github.com/Hangell/cryptox
 
-go 1.19
+go 1.26
