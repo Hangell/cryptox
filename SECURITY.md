@@ -9,6 +9,29 @@ The current `stream` implementation uses the legacy v1 file format. It must not 
 used where whole-file integrity is required. Planned guarantees in
 [ARCHITECTURE.md](ARCHITECTURE.md) are not guarantees of the current implementation.
 
+## Supported guarantees (current implementation)
+
+The guarantees below apply to the current `stream` v1 implementation and the
+`keys` package, and only under the listed assumptions. They are the maximum that
+the implementation provides; everything in
+[Known limitations](#known-limitations) is explicitly not guaranteed.
+
+- Per-chunk confidentiality and integrity: each chunk is encrypted and
+  authenticated with AES-GCM under the supplied key.
+- Wrong-key rejection for non-empty files: a chunk decrypted with the wrong key
+  fails its authentication tag. Empty files are the exception documented below.
+- Safe rejection of malformed input: truncated or oversized chunk lengths and
+  invalid nonce bytes are rejected before unbounded allocation.
+- Transactional publication: output is written to a unique temporary file and
+  renamed over the destination only on success, so a failed operation does not
+  replace the destination.
+- Secure key generation: `keys.GenerateKey` draws from `crypto/rand` and accepts
+  only 16, 24, or 32 byte keys.
+
+Assumptions: the caller supplies a suitable key, keeps it secret, uses a fresh
+key per v1 file, and writes to a trusted destination directory. The library does
+not enforce these policies; violating them voids the guarantees above.
+
 ## Known limitations
 
 - Each chunk is authenticated independently. Removing complete trailing chunks
