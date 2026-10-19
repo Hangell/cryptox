@@ -99,5 +99,5 @@ jobs:
           path: |
             stream/testdata/fuzz/
             envelope/testdata/fuzz/
-            identity/testdata/fuzz/
+            identity/**/testdata/fuzz/
           if-no-files-found: ignore

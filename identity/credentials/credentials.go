@@ -13,6 +13,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"math"
 	"time"
 
 	"github.com/Hangell/cryptox/keys/signatures"
@@ -81,7 +82,7 @@ func New(issuerPriv signatures.PrivateKey, subject signatures.PublicKey, purpose
 	if !purpose.valid() {
 		return Credential{}, ErrInvalidPurpose
 	}
-	if notAfter <= notBefore {
+	if !validWindow(notBefore, notAfter) {
 		return Credential{}, ErrInvalidValidity
 	}
 	c := Credential{
@@ -119,7 +120,7 @@ func (c Credential) payload() ([]byte, error) {
 	if !c.Purpose.valid() {
 		return nil, ErrInvalidPurpose
 	}
-	if c.NotAfter <= c.NotBefore {
+	if !validWindow(c.NotBefore, c.NotAfter) {
 		return nil, ErrInvalidValidity
 	}
 	out := make([]byte, 0, encodedSize)
@@ -166,7 +167,7 @@ func Decode(b []byte) (Credential, error) {
 	if !c.Purpose.valid() {
 		return Credential{}, ErrInvalidPurpose
 	}
-	if c.NotAfter <= c.NotBefore {
+	if !validWindow(c.NotBefore, c.NotAfter) {
 		return Credential{}, ErrInvalidValidity
 	}
 	return c, nil
@@ -195,4 +196,11 @@ func (c Credential) Verify(now time.Time) error {
 func (c Credential) validAt(now time.Time) bool {
 	u := now.Unix()
 	return u >= int64(c.NotBefore) && u < int64(c.NotAfter)
+}
+
+// validWindow reports whether a validity window is structurally sound: the end
+// is strictly after the start, and both bounds fit in int64 so they can be
+// compared against time.Time.Unix() without wraparound.
+func validWindow(notBefore, notAfter uint64) bool {
+	return notAfter > notBefore && notAfter <= math.MaxInt64
 }

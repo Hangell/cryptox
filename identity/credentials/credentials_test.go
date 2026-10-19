@@ -2,6 +2,7 @@ package credentials
 
 import (
 	"bytes"
+	"math"
 	"testing"
 	"time"
 
@@ -161,6 +162,42 @@ func TestNewValidation(t *testing.T) {
 	}
 	if _, err := New(signatures.PrivateKey{}, subject, PurposeDeviceIdentity, 1000, 2000); err == nil {
 		t.Fatal("New accepted an invalid issuer private key")
+	}
+}
+
+func TestValidityWindowWrapRejection(t *testing.T) {
+	_, issuerPriv := testIssuer(t)
+	subject := testSubject(t)
+
+	// A window ending beyond int64 would wrap negative in validAt and silently
+	// make the credential never valid; issuance must reject it instead.
+	if _, err := New(issuerPriv, subject, PurposeDeviceIdentity, 0, ^uint64(0)); err != ErrInvalidValidity {
+		t.Fatalf("notAfter=MaxUint64: got %v, want ErrInvalidValidity", err)
+	}
+	if _, err := New(issuerPriv, subject, PurposeDeviceIdentity, 0, uint64(math.MaxInt64)+1); err != ErrInvalidValidity {
+		t.Fatalf("notAfter=MaxInt64+1: got %v, want ErrInvalidValidity", err)
+	}
+
+	// The largest representable window (through MaxInt64) must still work.
+	c, err := New(issuerPriv, subject, PurposeDeviceIdentity, 0, uint64(math.MaxInt64))
+	if err != nil {
+		t.Fatalf("notAfter=MaxInt64: %v", err)
+	}
+	if err := c.Verify(time.Now()); err != nil {
+		t.Fatalf("MaxInt64 window rejected at now: %v", err)
+	}
+
+	// Decode must apply the same bound. Overwrite NotAfter (offset 74) with
+	// all-ones in an otherwise well-formed credential.
+	base, err := c.Encode()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for i := 0; i < 8; i++ {
+		base[1+2*signatures.PublicKeySize+1+8+i] = 0xFF
+	}
+	if _, err := Decode(base); err != ErrInvalidValidity {
+		t.Fatalf("decode of MaxUint64 notAfter: got %v, want ErrInvalidValidity", err)
 	}
 }
 

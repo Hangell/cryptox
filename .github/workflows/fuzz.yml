@@ -58,6 +58,6 @@ jobs:
             stream/testdata/fuzz/
             aead/testdata/fuzz/
             envelope/testdata/fuzz/
-            identity/testdata/fuzz/
+            identity/**/testdata/fuzz/
           if-no-files-found: ignore
           retention-days: 30
