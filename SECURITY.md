@@ -103,3 +103,29 @@ The [CI configuration](.github/workflows/ci.yml) includes tests, race detection,
 static analysis, fuzzing, and vulnerability scanning. A successful scan only
 addresses its database and analysis scope, not every cryptographic design flaw.
 Check the actual run for the relevant commit before claiming remote validation.
+
+## Release procedure
+
+A release is published only from an annotated `v*` tag whose commit is on
+`main`. The [release workflow](.github/workflows/release.yml) then, in order:
+
+1. Verifies the tag points at a commit on `main`.
+2. Builds with `-trimpath` and runs `go test -race ./...`; artifacts are not
+   produced if tests fail.
+3. Creates a source archive with `git archive` and a `sha256` checksum file.
+4. Generates an SPDX SBOM for the repository.
+5. Attaches a SLSA build-provenance attestation to the archive and checksums.
+6. Publishes the archive, checksums, and SBOM to the GitHub Release.
+
+Verification:
+
+- Checksums: `sha256sum -c checksums.txt` inside the release assets directory.
+- Provenance: `gh attestation verify --repo Hangell/cryptox dist/cryptox-*.tar.gz`.
+- Dependency inventory: the published `cryptox.spdx.json`.
+
+Release actions are pinned to immutable commit SHAs and the workflow runs with
+least-privilege permissions (`contents: write`, `attestations: write`,
+`id-token: write`). The source archive is the canonical release artifact; Go
+module resolution uses the repository at the tag directly. No release is a
+claim of production readiness or independent review.
+

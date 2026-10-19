@@ -1,0 +1,78 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write      # create the GitHub Release
+  attestations: write  # generate build provenance attestations
+  id-token: write      # OIDC token for attestations
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Build, attest, and publish
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version: stable
+          cache: false
+
+      # Release artifacts are produced only from a tag on main whose tests pass.
+      - name: Verify tag is on main
+        run: |
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
+            echo "::error::release tags must point at a commit on main"
+            exit 1
+          fi
+
+      - name: Build and test
+        run: |
+          go build -trimpath ./...
+          go test -race -count=1 -timeout=10m ./...
+
+      - name: Create source archive and checksums
+        run: |
+          mkdir -p dist
+          version="${GITHUB_REF_NAME#v}"
+          git archive --format=tar.gz \
+            --prefix="cryptox-${version}/" \
+            -o "dist/cryptox-${version}.tar.gz" "$GITHUB_SHA"
+          (cd dist && sha256sum "cryptox-${version}.tar.gz" > checksums.txt)
+          cat dist/checksums.txt
+
+      - name: Generate SBOM
+        uses: anchore/sbom-action@66cbf4bc1f1c0d2edc94016e65bc221b6bb0ad6c # v0.24.3
+        with:
+          path: ./
+          format: spdx-json
+          output-file: dist/cryptox.spdx.json
+
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: |
+            dist/cryptox-*.tar.gz
+            dist/checksums.txt
+
+      - name: Publish release
+        uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
+        with:
+          files: |
+            dist/cryptox-*.tar.gz
+            dist/checksums.txt
+            dist/cryptox.spdx.json
+          fail_on_unmatched_files: true
+          generate_release_notes: true
