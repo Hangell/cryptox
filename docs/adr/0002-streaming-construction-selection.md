@@ -1,13 +1,14 @@
 # ADR 0002 — Streaming construction selection (v2 replacement format)
 
-Status: **Accepted (maintainer design review recorded)** — the STREAM/AES-GCM-HKDF
-construction is selected and its parameters are recorded in
+Status: **Accepted (maintainer design review recorded; no freeze)** — the
+STREAM/AES-GCM-HKDF construction is selected and its parameters are recorded in
 [`docs/security/v2-streaming-design-review.md`](../security/v2-streaming-design-review.md).
-Independent specialist review remains a prerequisite before the v2 format is
-frozen or shipped as production-ready; this ADR does **not** substitute for that
-audit. Architecture approval and Phase 1 entry remain open in
-[ROADMAP.md](../../ROADMAP.md#current-progress). No cryptographic code or
-dependency was changed by this ADR.
+The independent specialist review (#71) was administratively closed by owner
+waiver without a review taking place; the v2 format therefore remains
+**pinned, not frozen**, and its parameters — including the per-key budget in
+[`docs/security/key-usage-limits.md`](../security/key-usage-limits.md) — are
+**not validated**. This ADR records no freeze and no production-readiness
+claim. No cryptographic code or dependency was changed by this ADR.
 
 Date: 2026-10-18. Scope: construction selection and parameter recording.
 Evidence dates are capture dates; verify against primary sources before any
@@ -226,6 +227,34 @@ serialization, or state machine requires a new ADR and a fresh specialist
 review. The residual items listed in §8 of the design review (concrete
 multi-key bounds and the optional ChaCha20-Poly1305 suite) remain open and
 must be resolved before any freeze or production-readiness claim.
+
+### Findings resolution and approval status (P0.06)
+
+The internal (automated-agent) review recorded four findings in
+[`docs/security/v2-independent-review.md`](../security/v2-independent-review.md).
+Each is resolved as follows, with re-test evidence:
+
+1. **"Matches Tink" claim (Medium)** — resolved in the design review §3/§7 and
+   the spec §7: the IV/final-flag layout mirrors Tink, but the CryptoX `info`
+   string makes the format **not** Tink wire-compatible.
+2. **Encryptor final-segment divergence (Medium)** — resolved in
+   `stream/v2api.go`; re-tested by `TestEncryptorExactMultipleOfSegmentSize`,
+   which verifies an exact-multiple-of-64 KiB stream emits exactly `n` segments
+   (no extra empty final segment) on both the streaming and function paths.
+3. **Unquantified per-key limit (Low)** — addressed by a concrete proposal in
+   [`docs/security/key-usage-limits.md`](../security/key-usage-limits.md)
+   (≤ 2^32 invocations, ≤ 2^48 plaintext+AAD bytes, ≤ 2^32 forgery attempts
+   per key). The proposal remains **unconfirmed** pending a specialist.
+4. **HKDF dependency claim (Low)** — resolved in the design review and ADR:
+   HKDF-SHA-256 is implemented locally over `crypto/hmac` (RFC 5869-verified),
+   with no external dependency.
+
+**Approval status.** The independent specialist review (#71) was
+administratively closed by owner waiver without a review taking place.
+Consequently this ADR does **not** record a freeze, does **not** declare the
+parameters validated, and does **not** claim production readiness. The v2
+format remains pinned at `41e38d2`; the per-key budget remains a proposal; and
+the HS20 multi-user/multi-key bound remains an open item.
 
 ---
 

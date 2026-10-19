@@ -3,9 +3,10 @@
 - **Format identifier:** `CXS2` (magic bytes `0x43 0x58 0x53 0x32`)
 - **Version:** `0x02`
 - **Suite:** `0x01` = AES-256-GCM-HKDF-SHA-256
-- **Status:** specified and pinned, but **not frozen**. The format awaits an
-  independent specialist review (#71) and the ADR approval decision (#72); treat
-  it as experimental. Changes to the algorithm, nonce, derivation,
+- **Status:** specified and pinned, but **not frozen**. The independent
+  specialist review (#71) was administratively closed by owner waiver without a
+  review taking place, so the format has **not** been independently validated;
+  treat it as experimental. Changes to the algorithm, nonce, derivation,
   serialization, or state machine require a new ADR and a fresh specialist
   review. The internal review (#3) records maintainer judgment only and does
   not substitute for the independent review.
@@ -150,6 +151,7 @@ specification and review. Unknown values are rejected; there is no negotiation
 and no insecure fallback. A future ChaCha20-Poly1305 suite is reserved (ADR 0003)
 and would be a new suite identifier.
 
-Freezing a version or suite identifier is reserved to the approval decision
-(#72), made only after the independent specialist review (#71). No freeze is in
-effect for `CXS2` at this time.
+Freezing a version or suite identifier remains reserved to an approval
+decision (#72). Because the independent specialist review (#71) was
+administratively waived without a review, **no freeze is in effect for `CXS2`**
+and its parameters are not validated.
