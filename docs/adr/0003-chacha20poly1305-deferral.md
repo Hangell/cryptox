@@ -32,7 +32,8 @@ The construction is standardized and widely deployed:
   Envelope v1 suite (`0x0002`).
 - Add ChaCha20-Poly1305 to the Wycheproof conformance tests and the CI matrix.
 
-**Costs:** the v2 wire format is frozen (ADR 0002) and Envelope v1 is specified;
+**Costs:** the v2 wire format is pinned (not frozen; ADR 0002) and Envelope v1 is
+specified;
 introducing a second suite is a format change requiring its own ADR, updated
 specifications, golden vectors, and a fresh specialist review. It also breaks
 the "standard library only" property of the core.
