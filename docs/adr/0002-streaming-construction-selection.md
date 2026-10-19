@@ -1,14 +1,17 @@
 # ADR 0002 — Streaming construction selection (v2 replacement format)
 
-Status: **Proposed** — this ADR selects a construction to evaluate and record
-evidence for; it does **not** approve or freeze a wire format. Architecture
-approval and Phase 1 entry remain open in
-[ROADMAP.md](../../ROADMAP.md#current-progress). No cryptographic code, dependency,
-or format was changed by this ADR.
+Status: **Accepted (maintainer design review recorded)** — the STREAM/AES-GCM-HKDF
+construction is selected and its parameters are recorded in
+[`docs/security/v2-streaming-design-review.md`](../security/v2-streaming-design-review.md).
+Independent specialist review remains a prerequisite before the v2 format is
+frozen or shipped as production-ready; this ADR does **not** substitute for that
+audit. Architecture approval and Phase 1 entry remain open in
+[ROADMAP.md](../../ROADMAP.md#current-progress). No cryptographic code or
+dependency was changed by this ADR.
 
-Date: 2026-10-18. Scope: research and documentation only, per the Phase 0
-increment. Evidence dates are capture dates; verify against primary sources
-before any implementation decision.
+Date: 2026-10-18. Scope: construction selection and parameter recording.
+Evidence dates are capture dates; verify against primary sources before any
+implementation decision.
 
 ---
 
@@ -183,55 +186,63 @@ Dependencies and platform constraints (capture date 2026-10-18):
 
 ---
 
-## Recommendation (pending specialist review)
+## Recommendation (accepted, pending independent review)
 
 Recommend **Alternative A**: implement a v2 streaming format that instantiates
 the STREAM construction (HRRV15) as specified for Tink's AES-GCM-HKDF streaming
 (AES-256-GCM), in pure Go using standard library primitives plus
 `golang.org/x/crypto/hkdf`, and treat Tink's Go implementation and the HS20
-analysis as the primary cross-implementation and security references. Require
-the age payload's final-chunk rule (a final-flag byte in the nonce; empty final
-chunk only for an empty stream) as a hardening invariant.
+analysis as the primary cross-implementation and security references.
 
-This recommendation is an engineering preference based on the evidence above. It
-is **not** specialist approval, and it does not freeze a wire format. The
-checklist below must be completed before any format is implemented or frozen.
+The open parameters were recorded in
+[`docs/security/v2-streaming-design-review.md`](../security/v2-streaming-design-review.md):
+header layout (`CXS2`), suite `0x01` = AES-256-GCM-HKDF-SHA-256, HKDF domain
+separation, segment/final-flag semantics, mechanical limits (`n <= 2^32`,
+`<= 2^48` bytes/stream), fork-safety, and the CryptoX-specific-header +
+Tink-compatible-segment compatibility decision.
 
----
-
-## Specialist review checklist
-
-1. Confirm the chosen nonce/key derivation and segment counter limits against
-   HS20's concrete multi-user bounds; state the quantitative per-key limits in
-   the format reference.
-2. Review the exact header layout, magic bytes, version byte, suite identifier,
-   and AAD binding (per-stream via HKDF `info`) before any implementation.
-3. Confirm the final-segment indicator semantics for empty, one-chunk, and
-   `n = 2^32` streams.
-4. Review the fork-safety posture (Tink documents that streaming AEAD is not
-   fork-safe) and decide the supported process model.
-5. Confirm the no-migration policy and the legacy-reader scope.
-6. Approve the test plan: Wycheproof vectors where applicable, cross-check
-   against Tink Go output, mutation tests for truncation/reorder/duplication,
-   property tests, and fuzzing of the parser.
-7. Approve dependency and toolchain decisions (stdlib + `x/crypto` vs. adopting
-   tink-go/age) against §19 and §20 of ARCHITECTURE.md.
+This is a maintainer design review, **not** specialist approval. Independent
+specialist review remains a prerequisite before the format is frozen or shipped
+as production-ready; the residual items are listed in §8 of the design review.
 
 ---
 
-## Unresolved questions
+## Specialist review checklist (recorded)
 
-- ChaCha20-Poly1305 (age-style) vs. AES-GCM (Tink-style) for the default suite:
-  AES-GCM is in the Go standard library; ChaCha20-Poly1305 has a larger nonce
-  and is available in `x/crypto`. The ADR recommends AES-GCM-HKDF but does not
-  close this question.
-- Whether the v2 format should be byte-compatible with Tink's streaming AEAD
-  (interoperability benefit) or use CryptoX-specific magic/version bytes
-  (independence benefit).
-- The maximum segment count and byte-count limits to publish, and their
-  derivation from the chosen security level.
-- Whether a Go < 1.25 toolchain floor is a hard requirement, which decides
-  reimplementation vs. dependency adoption.
+1. Concrete multi-user / multi-key bounds for the chosen parameters (HS20) —
+   **recorded as a residual item** for the independent review; mechanical limits
+   are recorded in the design review §5.
+2. Header layout, magic, version, suite, and AAD binding — **recorded** in the
+   design review §2–§3.
+3. Final-segment semantics for empty, one-chunk, and `n = 2^32` streams —
+   **recorded** in the design review §4.
+4. Fork-safety posture and process model — **recorded** in the design review §6.
+5. No-migration policy and legacy-reader scope — **unchanged** from ADR 0001 and
+   the v1 migration section below.
+6. Test plan (vectors, Tink cross-check, mutation, property, fuzz) — **retained**
+   as the acceptance baseline for issues #21 and #27.
+7. Dependency and toolchain decision (stdlib + `x/crypto`) — **recorded**;
+   `go.mod` currently declares `go 1.26`.
+
+---
+
+## Resolved questions
+
+- Default suite: **AES-256-GCM-HKDF-SHA-256** (stdlib + `x/crypto/hkdf`).
+  ChaCha20-Poly1305 is reserved as a future optional suite requiring its own
+  review.
+- Compatibility: **CryptoX-specific header with Tink-compatible segment
+  construction**, so v2 is unambiguously distinct from v1 while a Tink
+  implementation can serve as an independent oracle.
+- Maximum segment count and byte count: `n <= 2^32`, `<= 2^48` bytes per stream
+  at 64 KiB segments (design review §5).
+- Toolchain: reimplementation with stdlib + `x/crypto`; no adoption of tink-go
+  or age as dependencies.
+
+## Remaining open item
+
+- Independent specialist review of the concrete HS20 bounds and the `domainSep`
+  encoding before any production freeze (design review §8).
 
 ---
 
