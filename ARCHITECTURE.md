@@ -267,9 +267,9 @@ The actual package layout may evolve when supported by technical justification a
 
 As of Phase 1 start (2026-10-18), the repository contains four Go packages:
 
-- `keys` — key generation. The target subpackages (`derivation`, `exchange`,
-  `signatures`, `lifecycle`) do not exist yet and will be introduced
-  incrementally in Phase 1 and later.
+- `keys` — key generation and HKDF-SHA-256 purpose-separated derivation. The
+  target subpackages (`derivation`, `exchange`, `signatures`, `lifecycle`) do
+  not exist yet and will be introduced incrementally in Phase 1 and later.
 - `stream` — the legacy v1 file encryption/decryption and its reader-based
   parser. The target `framing` and `integrity` subpackages belong to the future
   v2 format (see the [replacement evaluation gate](#147-replacement-format-evaluation-gate)).
