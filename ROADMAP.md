@@ -1,1024 +1,801 @@
-# CryptoX — Development Roadmap
+# CryptoX — Roadmap Atualizado
 
-> **Project:** CryptoX
-> **Repository:** https://github.com/Hangell/cryptox
-> **Primary Language:** Go
-> **Architecture:** Modular, Hexagonal, Security-First
-> **Status:** Phase 0 in progress
-> **Current Target:** v1.0.0 — Stable Cryptographic Core
-
----
-
-## 1. Purpose
-
-This document defines the development strategy, milestones, priorities, dependencies, acceptance criteria, and release goals for CryptoX.
-
-CryptoX aims to evolve from a file encryption utility into a modular, general-purpose, security-first cryptographic SDK.
-
-The library must support secure cryptographic integration across multiple application domains, including:
-
-- File encryption and secure streaming.
-- Encrypted storage and backups.
-- Key generation and management.
-- Cryptographic identity.
-- Secure communication between systems.
-- End-to-end encrypted messaging.
-- Multi-device security.
-- Future integration with post-quantum cryptographic protocols.
-
-CryptoX must remain independent of application frameworks, database engines, network transports, and cloud providers.
-
-The roadmap follows the architecture defined in `ARCHITECTURE.md` and the engineering rules established in `AGENTS.md`.
-
-**Security and correctness take precedence over delivery speed, feature quantity, and performance optimization.**
+**Projeto:** CryptoX
+**Linguagem principal:** Go
+**Arquitetura:** Modular · Security-First · Hexagonal
+**Estado atual:** transição da fundação criptográfica para o formato seguro v2
+**Meta principal:** `v1.0.0` — Stable Cryptographic Core
 
 ---
 
-## 2. Project Constraints
+## Visão atual
 
-### 2.1 No production consumers
+O CryptoX deixou de ser apenas uma biblioteca experimental de criptografia de arquivos.
 
-CryptoX currently has no known production consumers.
+A base atual já possui:
 
-Therefore, the project may:
+- geração segura de chaves;
+- AES-256-GCM;
+- API AEAD com nonce gerado internamente;
+- HKDF-SHA-256;
+- separação de chaves por propósito;
+- formato legado v1 claramente isolado;
+- novo formato streaming v2;
+- autenticação de terminação;
+- proteção contra truncamento, reordenação, duplicação e modificação;
+- API streaming baseada em `io.Reader` / `io.WriteCloser`;
+- vetores externos Wycheproof;
+- fuzzing;
+- race detector;
+- `govulncheck`;
+- CI Linux, Windows e macOS;
+- fuzzing prolongado agendado;
+- release pipeline com SBOM, checksums e provenance;
+- processo privado de vulnerabilidade;
+- documentação explícita de garantias e limitações.
 
-- Replace its existing architecture.
-- Remove obsolete APIs.
-- Rename public packages.
-- Replace serialization formats.
-- Remove legacy cryptographic implementations.
-- Change internal contracts.
-- Reorganize its module structure.
-- Introduce breaking changes.
+O principal bloqueio agora não é implementação básica.
 
-Backward compatibility is not required during the initial modernization.
-
-However, all significant changes must be documented.
-
-### 2.2 Primary language
-
-Go is the primary development language.
-
-Rust is not required.
-
-Native libraries written in other languages may be evaluated when they provide established, reviewed cryptographic protocols that would be inappropriate to implement from scratch.
-
-### 2.3 Scope boundaries
-
-CryptoX is a cryptographic SDK.
-
-It must not become a messaging server, authentication platform, database framework, or cloud infrastructure solution.
-
-Its responsibilities end at clearly defined cryptographic and integration boundaries.
+É **validação criptográfica independente, congelamento do formato v2 e construção das camadas superiores sobre essa fundação**.
 
 ---
 
-## 3. Roadmap Overview
+# Visão das fases
 
-| Phase | Milestone | Priority | Target |
+| Fase | Objetivo | Estado atualizado | Target |
 |---|---|---|---|
-| 0 | Security Audit & Architecture Baseline | Critical | v0.1.0 |
-| 1 | Cryptographic Foundation | Critical | v0.2.0 |
-| 2 | Secure Streaming & Envelope | Critical | v0.3.0 |
-| 3 | Key Management & Secure Storage | High | v0.4.0 |
-| 4 | Identity & Device Security | High | v0.5.0 |
-| 5 | E2EE Protocol Integration | High | v0.6.0 |
-| 6 | Cross-Platform Integration | Medium | v0.7.0 |
-| 7 | Security Hardening & External Review | Critical | v0.9.0 |
-| 8 | Stable Cryptographic Core Release | Critical | v1.0.0 |
-| 9 | Advanced Cryptography & Ecosystem | Future | v1.x / v2.x |
-
-Version targets are planning milestones, not promised release dates.
-
-No milestone may advance merely because its planned development tasks are complete.
-
-Each phase requires validation against its security acceptance criteria.
+| 0 | Security Audit & Architecture Baseline | 🟡 Security Review | v0.1.0 |
+| 1 | Cryptographic Foundation | 🟢 Quase concluída | v0.2.0 |
+| 2 | Secure Streaming & Envelope | 🟡 Em andamento | v0.3.0 |
+| 3 | Key Management & Secure Storage | ⚪ Próxima grande fase | v0.4.0 |
+| 4 | Identity & Device Security | ⚪ Não iniciada | v0.5.0 |
+| 5 | E2EE Protocol Integration | ⚪ Não iniciada | v0.6.0 |
+| 6 | Cross-Platform Integration | 🟡 Parcialmente antecipada | v0.7.0 |
+| 7 | Security Hardening & External Review | 🟡 Infraestrutura antecipada | v0.9.0 |
+| 8 | Stable Cryptographic Core | ⚪ Não iniciada | v1.0.0 |
+| 9 | Advanced Crypto & Ecosystem | ⚪ Futuro | v1.x / v2.x |
 
 ---
 
-# Phase 0 — Security Audit & Architecture Baseline
+# Fase 0 — Security Audit & Architecture Baseline
 
-**Target:** v0.1.0
-**Priority:** Critical
-**Status:** In progress
+**Target:** `v0.1.0`
+**Estado recomendado:** **Security Review**
 
-## Objective
+## Já concluído
 
-Understand the existing CryptoX implementation, identify security weaknesses, and establish a validated architectural baseline.
+- [x] Inventário dos pacotes e APIs existentes.
+- [x] Revisão do AES-GCM legado.
+- [x] Análise de nonce e contador do v1.
+- [x] Identificação do risco de colisão de nonce entre arquivos.
+- [x] Análise do framing do v1.
+- [x] Identificação de truncamento silencioso.
+- [x] Análise de chunk ordering.
+- [x] Avaliação de arquivos temporários.
+- [x] Testes de entradas malformadas.
+- [x] Fuzzing do parser legado.
+- [x] Threat model inicial.
+- [x] Trust boundaries.
+- [x] Garantias e não-garantias documentadas.
+- [x] Estrutura de pacotes definida.
+- [x] ADR do formato streaming.
+- [x] Design v2 definido.
+- [x] Parâmetros de nonce, HKDF e segmentação definidos.
+- [x] Estratégia de migração v1 → v2 definida.
+- [x] API enganosa `ValidateEncryptedFile` depreciada em favor de `ValidateHeader`.
 
-This phase must be completed before broad refactoring.
+## Restante
 
-## Tasks
+- [ ] Obter **revisão criptográfica independente** dos parâmetros v2.
+- [ ] Validar concretamente os limites multi-user/multi-key do STREAM/HS20.
+- [ ] Confirmar formalmente o `domainSep`.
+- [ ] Confirmar limites de uso por chave.
+- [ ] Aprovar definitivamente o formato binário v2.
+- [ ] Mudar ADR 0002 de proposta/revisão interna para decisão aprovada.
 
-- [x] Inventory existing packages, exported functions, and dependencies.
-- [ ] Review the current AES-GCM implementation.
-- [ ] Analyze nonce generation and counter management.
-- [ ] Evaluate encrypted file framing.
-- [ ] Verify chunk authentication and ordering.
-- [ ] Investigate truncation and replay risks.
-- [ ] Review file creation permissions and temporary file handling.
-- [ ] Inspect error handling and malformed-input behavior.
-- [x] Review existing tests and benchmarks.
-- [x] Verify README claims against actual implementation.
-- [ ] Identify reusable code and components requiring replacement.
-- [ ] Establish the initial threat model.
-- [ ] Identify trust boundaries.
-- [ ] Define supported and unsupported security guarantees.
-- [ ] Confirm the target package structure.
-- [x] Document significant architecture decisions.
+## Gate de saída
 
-## Deliverables
+A Fase 0 termina quando houver:
 
-- Verified implementation inventory.
-- Prioritized security findings.
-- Initial threat model in `ARCHITECTURE.md`.
-- Validated architecture baseline.
-- Initial Architecture Decision Records.
-- Updated development backlog.
+> **aprovação independente suficiente para congelar as decisões criptográficas fundamentais do v2.**
 
-## Acceptance criteria
-
-- [ ] Critical implementation risks are documented.
-- [ ] Existing security assumptions are understood.
-- [ ] No unsupported security claims remain in public documentation.
-- [ ] The target architecture is approved.
-- [ ] Phase 1 requirements are clearly defined.
-
-**Exit gate:** Security and architecture review completed.
+Até lá, o código pode evoluir experimentalmente, mas o formato não deve ser declarado estável.
 
 ---
 
-# Phase 1 — Cryptographic Foundation
+# Fase 1 — Cryptographic Foundation
 
-**Target:** v0.2.0
-**Priority:** Critical
-**Status:** Not started
+**Target:** `v0.2.0`
+**Estado:** **Quase concluída**
 
-## Objective
+Esta fase avançou muito além do status antigo do roadmap.
 
-Establish a reliable cryptographic foundation with secure public APIs, validated primitives, and strong automated testing.
+## AEAD
 
-## Tasks
+- [x] Pacote `aead`.
+- [x] AES-256-GCM.
+- [x] Chave fortemente tipada de 256 bits.
+- [x] Nonce aleatório de 96 bits gerado internamente.
+- [x] Caller não controla nonce na API de alto nível.
+- [x] AAD suportado.
+- [x] Erro de autenticação identificável.
+- [x] Falha de autenticação nunca retorna plaintext.
+- [x] API segura para concorrência.
+- [x] Material de chave redigido em `String()`.
+- [x] Fuzz tests.
+- [x] Wycheproof AES-256-GCM.
 
-### Cryptographic primitives
+## Keys
 
-- [ ] Implement or wrap AES-256-GCM using a reviewed implementation.
-- [ ] Evaluate ChaCha20-Poly1305 support.
-- [ ] Implement validated key generation.
-- [ ] Implement HKDF-based key derivation.
-- [ ] Establish explicit key-purpose separation.
-- [ ] Define authenticated metadata handling.
-- [ ] Define safe nonce management.
-- [ ] Define limits for key and nonce usage.
+- [x] Geração via `crypto/rand`.
+- [x] Validação explícita dos tamanhos AES.
+- [x] HKDF-SHA-256.
+- [x] Domain separation.
+- [x] Key-purpose separation.
+- [x] Testes de derivação.
+- [x] Contextos criptográficos explícitos.
 
-### Public APIs
+## Engenharia
 
-- [ ] Design minimal, explicit APIs.
-- [ ] Prevent insecure algorithm configuration.
-- [ ] Reject invalid key sizes.
-- [ ] Avoid caller-managed nonces in high-level APIs.
-- [ ] Define safe error types.
-- [ ] Document concurrency guarantees.
-- [ ] Eliminate unnecessary global mutable state.
+- [x] `gofmt`.
+- [x] `go vet`.
+- [x] golangci-lint.
+- [x] race detector.
+- [x] unit tests.
+- [x] fuzzing.
+- [x] fuzzing prolongado agendado.
+- [x] `govulncheck`.
+- [x] CI multiplataforma.
+- [x] Actions pinadas por SHA.
+- [x] Go 1.26 definido como baseline.
+- [x] processo de vulnerability reporting.
+- [x] SBOM/provenance preparados para releases.
 
-### Engineering foundation
+## Restante
 
-- [ ] Establish Go package conventions.
-- [ ] Configure formatting and linting.
-- [ ] Configure `go vet`.
-- [ ] Configure race testing.
-- [ ] Add unit tests.
-- [ ] Add cryptographic test vectors.
-- [ ] Add fuzz tests for untrusted inputs.
-- [ ] Add automated dependency checks.
-- [ ] Establish release and versioning conventions.
+- [ ] Fechar revisão independente do AEAD + derivação usados pelo v2.
+- [ ] Decidir se ChaCha20-Poly1305 entra nesta fase ou fica explicitamente para futura suite.
+- [ ] Definir política final de erros públicos compartilhados entre os módulos.
+- [ ] Congelar os contratos públicos que entrarão no primeiro release.
 
-## Deliverables
+## Gate
 
-- AEAD module.
-- Key generation utilities.
-- HKDF integration.
-- Public API conventions.
-- Automated CI security checks.
-- Initial test vector suite.
-- Documented cryptographic policies.
-
-## Acceptance criteria
-
-- [ ] Implementations use recognized cryptographic primitives.
-- [ ] Invalid inputs fail safely.
-- [ ] Authentication failures never return plaintext.
-- [ ] Key-and-nonce reuse is prevented by high-level APIs under documented assumptions.
-- [ ] Cryptographic test vectors pass.
-- [ ] Fuzzing infrastructure is functional.
-- [ ] Security assumptions are documented.
-- [ ] API design has undergone security review.
-
-**Exit gate:** Cryptographic foundation verified.
+> Fundação criptográfica revisada, testada e suficientemente estável para receber módulos superiores.
 
 ---
 
-# Phase 2 — Secure Streaming & Envelope
+# Fase 2 — Secure Streaming & Envelope
 
-**Target:** v0.3.0
-**Priority:** Critical
-**Status:** Not started
+**Target:** `v0.3.0`
+**Estado:** **Em andamento**
 
-## Objective
+Essa deve ser a **prioridade principal de desenvolvimento agora**.
 
-Deliver secure, authenticated, memory-efficient encryption for files and streams.
+## Streaming v2 — já implementado
 
-This phase replaces the legacy file encryption format with a newly specified, versioned format.
+- [x] Magic independente `CXS2`.
+- [x] Version `0x02`.
+- [x] Suite explícita.
+- [x] AES-256-GCM.
+- [x] HKDF-SHA-256.
+- [x] Salt de 32 bytes.
+- [x] Nonce prefix de 7 bytes.
+- [x] Chave independente derivada por stream.
+- [x] Segmentos de 64 KiB.
+- [x] Counter big-endian.
+- [x] Final flag autenticado.
+- [x] Empty stream autenticado.
+- [x] Detecção de truncamento.
+- [x] Detecção de reordenação.
+- [x] Detecção de duplicação.
+- [x] Detecção de corrupção.
+- [x] Limite de contador.
+- [x] Limite estrutural de stream.
+- [x] AAD ligado à derivação.
+- [x] Fuzzing do v2.
+- [x] API streaming pública.
+- [x] `io.Reader`.
+- [x] `io.WriteCloser`.
+- [x] Finalização explícita.
+- [x] Sem promessa falsa de whole-stream integrity antes da finalização.
 
-## Tasks
+## File adapters
 
-### Streaming
+- [x] arquivos temporários restritivos;
+- [x] publicação apenas após sucesso;
+- [x] preservação do destino em falha;
+- [x] política de overwrite documentada;
+- [x] testes de erro de publicação;
+- [x] comportamento de crash/durabilidade documentado.
 
-- [ ] Define a new authenticated streaming specification.
-- [ ] Implement streaming encryption.
-- [ ] Implement streaming decryption.
-- [ ] Support bounded-memory processing.
-- [ ] Authenticate stream headers.
-- [ ] Authenticate security-relevant metadata.
-- [ ] Bind chunk ordering cryptographically.
-- [ ] Detect missing chunks.
-- [ ] Detect reordered chunks.
-- [ ] Detect truncated streams.
-- [ ] Authenticate stream termination.
-- [ ] Reject oversized length fields.
-- [ ] Prevent counter overflow.
-- [ ] Define maximum stream size.
-- [ ] Handle partial reads and writes correctly.
-- [ ] Ensure safe behavior under interrupted operations.
+## Agora falta o **Envelope**
 
-### File handling
+Criar pacote:
 
-- [ ] Use restrictive temporary file permissions.
-- [ ] Avoid exposing partially decrypted output.
-- [ ] Ensure safe cleanup after failures.
-- [ ] Document atomicity guarantees and filesystem assumptions.
-- [ ] Test disk-full and interrupted-write scenarios.
-- [ ] Validate file destination and overwrite policies.
+```text
+envelope/
+```
 
-### Envelope
+Responsabilidade:
 
-- [ ] Define versioned envelope structures.
-- [ ] Define canonical serialization.
-- [ ] Bind algorithm identifiers cryptographically.
-- [ ] Reject unsupported versions.
-- [ ] Reject malformed headers.
-- [ ] Enforce explicit size limits.
-- [ ] Document the binary format.
+```text
+Envelope
+├── version
+├── suite
+├── metadata autenticada
+├── key information
+├── payload / stream
+└── extensões futuras
+```
 
-## Deliverables
+### Tasks
 
-- Secure streaming module.
-- Secure envelope module.
-- Versioned cryptographic file format.
-- Streaming interoperability test vectors.
-- File encryption examples.
-- Updated documentation.
+- [ ] Definir especificação `CryptoX Envelope v1`.
+- [ ] Definir serialização canônica.
+- [ ] Definir magic independente.
+- [ ] Definir versionamento.
+- [ ] Definir algorithm/suite identifiers.
+- [ ] Autenticar metadata crítica.
+- [ ] Estabelecer limites explícitos.
+- [ ] Rejeitar versões desconhecidas.
+- [ ] Rejeitar campos duplicados/ambíguos.
+- [ ] Fuzzar o parser.
+- [ ] Criar vetores externos.
+- [ ] Publicar especificação independente da implementação.
 
-## Acceptance criteria
+## Interoperabilidade
 
-- [ ] Truncation is detected.
-- [ ] Chunk reordering is detected.
-- [ ] Unauthorized modification is detected.
-- [ ] Missing finalization is detected.
-- [ ] Counter overflow is rejected.
-- [ ] Malformed files fail safely.
-- [ ] Temporary file behavior is secure under documented filesystem assumptions.
-- [ ] Memory consumption remains bounded for large files.
-- [ ] All adversarial streaming tests pass.
+Também falta fortalecer:
 
-**Exit gate:** Authenticated streaming implementation validated.
+- [ ] implementação independente capaz de consumir v2;
+- [ ] vetor compatível/verificável contra construção Tink;
+- [ ] corpus binário oficial CryptoX;
+- [ ] testes golden cross-version.
 
----
+## Gate
 
-# Phase 3 — Key Management & Secure Storage
+> Um arquivo produzido por CryptoX deve poder ser especificado, validado e implementado por outra equipe sem consultar o código Go.
 
-**Target:** v0.4.0
-**Priority:** High
-**Status:** Not started
-
-## Objective
-
-Provide secure abstractions for cryptographic key lifecycle and encrypted persistence.
-
-## Tasks
-
-### Key management
-
-- [ ] Define cryptographic key representations.
-- [ ] Implement key generation policies.
-- [ ] Implement key identification.
-- [ ] Implement key derivation contexts.
-- [ ] Implement key-purpose separation.
-- [ ] Define key lifecycle states.
-- [ ] Define rotation mechanisms.
-- [ ] Define controlled import/export.
-- [ ] Document revocation limitations.
-- [ ] Prevent accidental secret logging and serialization.
-
-### Secure storage
-
-- [ ] Define secure storage contracts.
-- [ ] Implement encrypted record storage.
-- [ ] Authenticate persistent state.
-- [ ] Support versioned records.
-- [ ] Define atomic write assumptions.
-- [ ] Implement corruption detection.
-- [ ] Document rollback limitations.
-- [ ] Define storage migration mechanisms.
-- [ ] Add integration tests for persistence failures.
-
-### Platform integration contracts
-
-- [ ] Define optional platform secure-storage interfaces.
-- [ ] Evaluate Android Keystore integration.
-- [ ] Evaluate Apple Keychain integration.
-- [ ] Evaluate OS credential-store integration.
-- [ ] Evaluate HSM integration requirements.
-
-## Deliverables
-
-- Key management module.
-- Secure storage abstraction.
-- Secure persistence implementation.
-- Storage test suite.
-- Key lifecycle documentation.
-- Platform integration contracts.
-
-## Acceptance criteria
-
-- [ ] Keys are separated by purpose.
-- [ ] Sensitive material is not exposed through normal diagnostics.
-- [ ] Corrupted records are rejected.
-- [ ] Persistent state is authenticated.
-- [ ] Recovery expectations are documented.
-- [ ] Rollback protection limitations are explicit.
-- [ ] Platform dependencies remain optional.
-
-**Exit gate:** Key and storage lifecycle validated.
+Esse é um gate importantíssimo se o CryptoX quiser um dia se tornar protocolo.
 
 ---
 
-# Phase 4 — Identity & Device Security
+# Fase 3 — Key Management & Secure Storage
 
-**Target:** v0.5.0
-**Priority:** High
-**Status:** Not started
+**Target:** `v0.4.0`
+**Estado:** **Próxima grande fase**
 
-## Objective
+Depois do envelope, essa seria minha próxima prioridade.
 
-Provide reusable cryptographic identity components suitable for secure communication and multi-device systems.
+Criar:
 
-## Tasks
+```text
+keys/
+keyring/
+securestorage/
+```
 
-### Identity
+## Key lifecycle
 
-- [ ] Define cryptographic identity models.
-- [ ] Support device-specific identity keys.
-- [ ] Implement public-key verification.
-- [ ] Integrate reviewed digital signature implementations.
-- [ ] Define key identifiers.
-- [ ] Define credential representation.
-- [ ] Validate identity-related serialization.
+- [ ] `KeyID`.
+- [ ] key purpose.
+- [ ] key version.
+- [ ] created-at.
+- [ ] status.
+- [ ] active.
+- [ ] retired.
+- [ ] revoked.
+- [ ] rotation.
+- [ ] import/export controlado.
+- [ ] key hierarchy.
+- [ ] master/root keys.
+- [ ] derived keys.
 
-### Device lifecycle
+Sugestão conceitual:
 
-- [ ] Define device authorization contracts.
-- [ ] Define device revocation semantics.
-- [ ] Define identity change handling.
-- [ ] Support cryptographic verification workflows.
-- [ ] Document key replacement security assumptions.
+```text
+Root Key
+   │
+   ├── Stream Key
+   ├── Storage Key
+   ├── Identity Key
+   └── Session Key
+```
 
-### Transparency
+Nunca reutilizar diretamente a mesma chave para contextos diferentes.
 
-- [ ] Define interfaces for key transparency.
-- [ ] Evaluate suitable append-only log constructions.
-- [ ] Define verification requirements.
-- [ ] Document consistency and split-view threats.
+## Secure storage
 
-## Deliverables
+- [ ] registro autenticado;
+- [ ] envelope versionado;
+- [ ] atomic write;
+- [ ] corruption detection;
+- [ ] migration;
+- [ ] recovery;
+- [ ] rollback limitations;
+- [ ] transactional updates.
 
-- Identity module.
-- Device identity abstractions.
-- Verification APIs.
-- Transparency integration contracts.
-- Identity test vectors.
-- Device lifecycle documentation.
+API conceitual:
 
-## Acceptance criteria
+```go
+type Store interface {
+    Put(...)
+    Get(...)
+    Delete(...)
+}
+```
 
-- [ ] Identity verification uses recognized cryptographic mechanisms.
-- [ ] Key substitution risks are explicitly addressed.
-- [ ] Device authorization assumptions are documented.
-- [ ] Identity formats are versioned.
-- [ ] Invalid credentials are rejected.
-- [ ] No unsupported identity trust claims are made.
+A interface não deve conhecer banco, cloud ou filesystem específico.
 
-**Exit gate:** Identity components validated.
+## Adaptadores futuros
 
----
-
-# Phase 5 — E2EE Protocol Integration
-
-**Target:** v0.6.0
-**Priority:** High
-**Status:** Not started
-
-## Objective
-
-Enable consuming applications to integrate established end-to-end encryption protocols through consistent CryptoX interfaces.
-
-CryptoX must not invent a new messaging cryptographic protocol.
-
-## Tasks
-
-### Protocol selection
-
-- [ ] Evaluate established individual-session protocols.
-- [ ] Evaluate maintained protocol libraries.
-- [ ] Review licensing compatibility.
-- [ ] Review audit history.
-- [ ] Evaluate mobile compatibility.
-- [ ] Evaluate persistent state requirements.
-- [ ] Produce protocol selection ADR.
-
-### Session integration
-
-- [ ] Define session interface contracts.
-- [ ] Implement the selected protocol adapter.
-- [ ] Support authenticated session establishment.
-- [ ] Integrate secure session state storage.
-- [ ] Define recovery from interrupted state updates.
-- [ ] Handle out-of-order messages according to protocol guarantees.
-- [ ] Handle replay attempts according to protocol guarantees.
-- [ ] Document key change behavior.
-
-### Multi-device integration
-
-- [ ] Define device identity integration.
-- [ ] Define per-device session behavior.
-- [ ] Define state synchronization boundaries.
-- [ ] Define device revocation behavior.
-- [ ] Validate cross-device interoperability.
-
-### Group E2EE
-
-- [ ] Evaluate MLS integration.
-- [ ] Review group-state persistence requirements.
-- [ ] Define membership-change behavior.
-- [ ] Define protocol version compatibility.
-- [ ] Evaluate security implications of group recovery.
-
-## Deliverables
-
-- E2EE protocol selection ADR.
-- Session integration APIs.
-- Reviewed protocol adapter.
-- E2EE interoperability tests.
-- Multi-device integration contracts.
-- Group protocol integration specification.
-
-## Acceptance criteria
-
-- [ ] No custom unreviewed messaging protocol is introduced.
-- [ ] Protocol security assumptions are documented.
-- [ ] Session interoperability tests pass.
-- [ ] Invalid session states fail safely.
-- [ ] Replay and ordering behavior matches the selected protocol.
-- [ ] Persistence requirements are verified.
-- [ ] Multi-device assumptions are explicit.
-- [ ] Independent security review requirements are identified.
-
-**Exit gate:** E2EE integration technically validated.
-
-**Release restriction:** E2EE functionality remains experimental until the required independent security review and interoperability validation are completed.
+```text
+securestorage/
+    memory/
+    file/
+    android/
+    apple/
+    pkcs11/
+```
 
 ---
 
-# Phase 6 — Cross-Platform Integration
+# Fase 4 — Identity & Device Security
 
-**Target:** v0.7.0
-**Priority:** Medium
-**Status:** Not started
+**Target:** `v0.5.0`
 
-## Objective
+Aqui o CryptoX começa a ficar especialmente interessante para **agentes e máquinas**.
 
-Validate CryptoX across supported systems and prepare secure integration mechanisms for mobile and desktop applications.
+## Identity
 
-## Tasks
+- [ ] Ed25519.
+- [ ] identidade persistente.
+- [ ] DeviceID.
+- [ ] AgentID.
+- [ ] assinatura.
+- [ ] verificação.
+- [ ] credential format.
+- [ ] key fingerprint.
+- [ ] rotação.
+- [ ] revogação.
 
-### Go platforms
+Modelo:
 
-- [ ] Validate Linux AMD64.
-- [ ] Validate Linux ARM64.
-- [ ] Validate Windows AMD64.
-- [ ] Validate macOS ARM64.
-- [ ] Validate macOS AMD64 where supported.
+```text
+Identity
+ ├── ID
+ ├── Signing Public Key
+ ├── Encryption Public Key
+ ├── Device/Agent metadata
+ └── Credential
+```
 
-### Android
+## Key agreement
 
-- [ ] Evaluate Go mobile bindings.
-- [ ] Define Android integration contracts.
-- [ ] Evaluate Android Keystore.
-- [ ] Test device lifecycle behavior.
-- [ ] Validate cryptographic state persistence.
-- [ ] Test interruption and process termination scenarios.
+- [ ] avaliar X25519.
+- [ ] definir contratos.
+- [ ] derivar session keys.
+- [ ] binding com identidade.
 
-### iOS
+## Device/Agent lifecycle
 
-- [ ] Evaluate supported Go integration mechanisms.
-- [ ] Define Swift-facing interfaces.
-- [ ] Evaluate Keychain and Secure Enclave.
-- [ ] Validate secret handling across language boundaries.
-- [ ] Test process termination and state recovery.
-- [ ] Validate interoperability with other platforms.
-
-### Interoperability
-
-- [ ] Share cryptographic test vectors across platforms.
-- [ ] Verify deterministic format compatibility.
-- [ ] Test malformed input handling across platforms.
-- [ ] Compare behavior between implementations.
-- [ ] Document supported integration models.
-
-## Deliverables
-
-- Cross-platform test matrix.
-- Mobile integration prototypes.
-- Platform security documentation.
-- Shared interoperability vectors.
-- Mobile integration decision ADR.
-
-## Acceptance criteria
-
-- [ ] Core functionality passes tests on supported targets.
-- [ ] Cross-platform ciphertext interoperability is verified.
-- [ ] Platform-specific limitations are documented.
-- [ ] Secret handling across FFI boundaries is reviewed.
-- [ ] No unsupported platform security guarantees are made.
-
-**Exit gate:** Cross-platform compatibility validated.
+- [ ] enrollment.
+- [ ] verification.
+- [ ] rotation.
+- [ ] revocation.
+- [ ] replacement.
+- [ ] recovery.
 
 ---
 
-# Phase 7 — Security Hardening & External Review
+# Fase 5 — E2EE Protocol Integration
 
-**Target:** v0.9.0
-**Priority:** Critical
-**Status:** Not started
+**Target:** `v0.6.0`
 
-## Objective
+Aqui eu mudaria ligeiramente a visão original.
 
-Prepare the intended stable release scope for independent security assessment.
+Não pensaria apenas em “mensageiro”.
 
-## Tasks
+Pensaria em:
 
-### Security testing
+> **Secure sessions between cryptographic identities.**
 
-- [ ] Run comprehensive unit and integration tests.
-- [ ] Run fuzzing campaigns.
-- [ ] Run race-condition detection.
-- [ ] Run static analysis.
-- [ ] Run dependency vulnerability analysis.
-- [ ] Review public API misuse risks.
-- [ ] Validate malformed-input resistance.
-- [ ] Test key lifecycle edge cases.
-- [ ] Test encrypted storage failures.
-- [ ] Test streaming corruption scenarios.
-- [ ] Validate protocol interoperability.
+Isso serve para:
 
-### Security governance
+- pessoas;
+- dispositivos;
+- serviços;
+- agentes de IA;
+- servidores;
+- aplicações offline.
 
-- [ ] Update the threat model.
-- [ ] Review architectural decisions.
-- [ ] Document residual risks.
-- [ ] Prepare an external audit scope.
-- [ ] Obtain independent security review for the intended stable components.
-- [ ] Track findings and remediation.
-- [ ] Reassess critical changes after remediation.
-- [ ] Establish vulnerability disclosure procedures.
+## Individual sessions
 
-### Supply-chain security
+Avaliar bibliotecas/protocolos existentes para:
 
-- [ ] Review all dependencies.
-- [ ] Generate an SBOM.
-- [ ] Pin release dependencies appropriately.
-- [ ] Establish release artifact integrity verification.
-- [ ] Configure release provenance where practical.
-- [ ] Protect release workflows.
-- [ ] Review repository branch protection and permissions.
+- authenticated key agreement;
+- forward secrecy;
+- post-compromise security;
+- replay handling;
+- out-of-order delivery.
 
-## Deliverables
+- [ ] selecionar protocolo estabelecido;
+- [ ] ADR;
+- [ ] adapter;
+- [ ] session state;
+- [ ] persistent state;
+- [ ] interrupted update recovery;
+- [ ] replay handling;
+- [ ] message counters;
+- [ ] interoperability.
 
-- Security testing reports.
-- Updated threat model.
-- Security audit report or equivalent independent assessment.
-- Remediation backlog.
-- Release security checklist.
-- Dependency inventory and SBOM.
+**Não inventar um Signal próprio.**
 
-## Acceptance criteria
+CryptoX deve ser uma camada que integra protocolos revisados.
 
-- [ ] No known unresolved critical or high-severity vulnerability is accepted in the stable release scope without documented risk disposition and explicit release decision.
-- [ ] Independent review findings have been addressed or appropriately scoped.
-- [ ] Security claims correspond to tested capabilities.
-- [ ] Release artifacts have integrity verification.
-- [ ] Known limitations are documented.
-- [ ] Relevant tests pass after remediation.
+## Group E2EE
 
-**Exit gate:** Stable release security review completed.
+- [ ] avaliar MLS;
+- [ ] group membership;
+- [ ] epoch;
+- [ ] member addition/removal;
+- [ ] state persistence;
+- [ ] recovery.
 
 ---
 
-# Phase 8 — Stable Cryptographic Core Release
+# Fase 6 — Cross-Platform
 
-**Target:** v1.0.0
-**Priority:** Critical
-**Status:** Not started
+**Target:** `v0.7.0`
 
-## Objective
+Parte desta fase já começou antecipadamente.
 
-Publish a stable, documented, independently reviewed cryptographic core suitable for integration into security-sensitive applications within its documented threat model.
+## Já existente
 
-## Scope
+- [x] Linux CI.
+- [x] Windows CI.
+- [x] macOS CI.
 
-The stable release must include validated components for:
+## Falta
 
-- Authenticated encryption.
-- Secure key generation.
-- Key derivation.
-- Secure streaming.
-- Versioned encrypted envelopes.
-- Core documentation.
-- Test vectors.
-- Security policy.
-- Supported-platform matrix.
+- [ ] Linux ARM64.
+- [ ] macOS ARM64 explicitamente validado.
+- [ ] Android.
+- [ ] iOS.
+- [ ] bindings.
+- [ ] shared interoperability corpus.
 
-Additional modules may be included only if their security and compatibility criteria are satisfied.
+## Android
 
-**E2EE, identity, mobile bindings, and other advanced modules may remain experimental or be distributed separately.**
+- [ ] gomobile ou estratégia equivalente.
+- [ ] Android Keystore.
+- [ ] lifecycle.
+- [ ] process death.
+- [ ] backup/restore semantics.
 
-A stable core release must not be delayed merely to include every planned advanced feature.
+## Apple
 
-## Tasks
-
-- [ ] Freeze the intended stable API scope.
-- [ ] Complete public API documentation.
-- [ ] Publish format specifications.
-- [ ] Finalize migration guidance.
-- [ ] Publish supported platform information.
-- [ ] Complete required security assessments.
-- [ ] Validate release artifacts.
-- [ ] Publish benchmark methodology.
-- [ ] Update examples.
-- [ ] Finalize `SECURITY.md`.
-- [ ] Finalize `CONTRIBUTING.md`.
-- [ ] Publish release notes.
-- [ ] Tag the stable release.
-
-## Acceptance criteria
-
-- [ ] Stable API scope is explicitly defined.
-- [ ] Public APIs are documented.
-- [ ] Cryptographic formats are specified.
-- [ ] Security properties and limitations are documented.
-- [ ] All release-blocking findings are resolved.
-- [ ] Required independent assessment is complete.
-- [ ] Release builds pass the supported test matrix.
-- [ ] Examples are functional.
-- [ ] Versioning and release policies are established.
-
-**Exit gate:** v1.0.0 approved for publication.
+- [ ] Swift-facing API.
+- [ ] Keychain.
+- [ ] Secure Enclave quando aplicável.
+- [ ] lifecycle.
 
 ---
 
-# Phase 9 — Advanced Cryptography & Ecosystem
+# Fase 7 — Hardening & Independent Security Review
 
-**Target:** v1.x / v2.x
-**Priority:** Future
-**Status:** Not started
+**Target:** `v0.9.0`
 
-## Objective
+A infraestrutura já começou bem antes da fase.
 
-Expand CryptoX beyond its stable core without weakening established security properties.
+## Já existente
 
-Potential initiatives:
+- [x] race detector;
+- [x] fuzzing;
+- [x] scheduled fuzzing;
+- [x] static analysis;
+- [x] govulncheck;
+- [x] disclosure policy;
+- [x] SBOM pipeline;
+- [x] artifact provenance;
+- [x] immutable GitHub Actions;
+- [x] checksums;
+- [x] least-privilege release workflow.
 
-### Post-quantum integration
+## Falta
 
-- [ ] Evaluate standardized post-quantum mechanisms.
-- [ ] Review maintained implementations.
-- [ ] Evaluate hybrid key establishment protocols.
-- [ ] Document interoperability and migration strategies.
-- [ ] Avoid experimental protocol compositions in production.
+- [ ] external cryptographic audit;
+- [ ] API misuse review;
+- [ ] envelope audit;
+- [ ] key lifecycle audit;
+- [ ] streaming implementation audit;
+- [ ] persistence failure campaigns;
+- [ ] longer fuzzing campaigns;
+- [ ] branch/ruleset hardening;
+- [ ] dependency review;
+- [ ] remediation cycle.
 
-### Advanced identity
+Objetivo:
 
-- [ ] Extend key transparency integrations.
-- [ ] Evaluate anonymous credentials.
-- [ ] Evaluate privacy-preserving verification systems.
-- [ ] Explore suitable credential revocation mechanisms.
-
-### Enterprise integration
-
-- [ ] Evaluate HSM adapters.
-- [ ] Evaluate PKCS#11 integration.
-- [ ] Evaluate enterprise key lifecycle requirements.
-- [ ] Add optional compliance-oriented integrations.
-
-### Developer ecosystem
-
-- [ ] Create additional examples.
-- [ ] Publish integration guides.
-- [ ] Improve mobile bindings.
-- [ ] Publish interoperability test suites.
-- [ ] Establish long-term maintenance policies.
-- [ ] Encourage independent implementations and external review.
-
-Each advanced capability requires a separate security assessment and architecture decision.
+> Nenhum `critical` ou `high` conhecido sem decisão explícita de risco.
 
 ---
 
-# 4. Implementation Priority Rules
+# Fase 8 — Stable Cryptographic Core
 
-Development agents must prioritize work according to risk and dependency order.
+**Target:** `v1.0.0`
 
-## P0 — Security blockers
+Eu reduziria deliberadamente o escopo do primeiro `v1`.
 
-Examples:
+O `v1.0.0` **não precisa esperar E2EE, mobile ou post-quantum**.
 
-- Cryptographic vulnerabilities.
-- Authentication bypass.
-- Nonce reuse.
-- Unsafe plaintext exposure.
-- Broken integrity verification.
-- Secret leakage.
-- Malformed-input vulnerabilities.
-- Unsafe protocol downgrade.
+## Escopo ideal do CryptoX 1.0
 
-P0 issues block affected releases.
+```text
+cryptox
+├── aead
+├── keys
+├── stream
+├── envelope
+└── securestorage
+```
 
-## P1 — Core correctness
+Com:
 
-Examples:
+- AEAD estável;
+- HKDF;
+- key separation;
+- streaming autenticado;
+- envelopes versionados;
+- secure storage básico;
+- formatos publicados;
+- interoperabilidade;
+- auditoria independente;
+- release assinado/provenance;
+- API estável.
 
-- Incorrect serialization.
-- Incomplete error handling.
-- State corruption.
-- Missing protocol validation.
-- Unsafe concurrency.
-- Broken test vectors.
-- Incorrect key lifecycle behavior.
+Identity e E2EE podem continuar experimentais.
 
-## P2 — Architecture and maintainability
+## Gate v1.0
 
-Examples:
-
-- Module decoupling.
-- API consistency.
-- Documentation.
-- Testability.
-- Dependency simplification.
-- Developer experience.
-
-## P3 — Performance and enhancements
-
-Examples:
-
-- Allocation optimization.
-- Parallel processing.
-- Additional adapters.
-- Optional algorithms.
-- Developer tooling.
-
-Performance work must not precede unresolved security or correctness blockers.
+- [ ] API congelada.
+- [ ] wire formats congelados.
+- [ ] especificações publicadas.
+- [ ] vetores oficiais publicados.
+- [ ] auditoria externa concluída.
+- [ ] findings tratados.
+- [ ] supported platforms documentadas.
+- [ ] release artifacts verificáveis.
+- [ ] security policy final.
+- [ ] migration policy.
+- [ ] sem security blocker conhecido.
 
 ---
 
-# 5. Definition of Done
+# Fase 9 — Advanced Crypto & CryptoX Protocol Ecosystem
 
-A task is complete only when:
+**Target:** `v1.x / v2.x`
 
-- [ ] Implementation satisfies its documented requirements.
-- [ ] Security assumptions are explicit.
-- [ ] Relevant unit tests exist.
-- [ ] Relevant negative tests exist.
-- [ ] Cryptographic test vectors pass where applicable.
-- [ ] Failure behavior is tested.
-- [ ] Input validation is complete.
-- [ ] Public APIs are documented.
-- [ ] No unintended secret logging exists.
-- [ ] No unsafe default is introduced.
-- [ ] Relevant race tests pass.
-- [ ] Relevant fuzz tests pass.
-- [ ] Dependency changes are justified.
-- [ ] Architecture documentation is updated when necessary.
-- [ ] Known limitations are documented.
+Aqui entram as coisas mais ambiciosas.
 
-Do not equate successful compilation with task completion.
+## Agent-to-Agent Security
 
----
+Criar uma especificação baseada nos blocos anteriores:
 
-# 6. Release Policy
+```text
+Agent A
+   │
+Identity
+   │
+Authenticated Session
+   │
+CryptoX Envelope
+   │
+Transport qualquer
+   │
+CryptoX Envelope
+   │
+Authenticated Session
+   │
+Identity
+   │
+Agent B
+```
 
-CryptoX releases must be evidence-based.
+O CryptoX não precisaria controlar HTTP, MCP, WebSocket, Kafka etc.
 
-A release may be published only when:
+Ele protegeria o **payload** independentemente do transporte.
 
-1. Its scope is defined.
-2. Its security properties are documented.
-3. Its compatibility expectations are stated.
-4. Its automated tests pass.
-5. Its relevant security reviews are complete.
-6. Its known limitations are recorded.
-7. Its release artifacts can be verified.
+Potencial aplicação:
 
-Cryptographic format versions and Go module versions must be managed separately when necessary.
+```text
+Codex ────────┐
+Claude ───────┤
+DeepSeek ─────┤── CryptoX Secure Agent Layer
+Qwen ─────────┤
+Local Agent ──┘
+```
 
-A new Go module version does not automatically require a new encrypted format version.
+### Possibilidades futuras
 
-Similarly, a new encrypted format version does not necessarily require a major Go module release unless public API compatibility is affected.
+- [ ] AgentID.
+- [ ] agent credentials.
+- [ ] signed task envelopes.
+- [ ] encrypted agent messages.
+- [ ] nonce/replay tracking.
+- [ ] delegated credentials.
+- [ ] capability tokens.
+- [ ] agent key rotation.
+- [ ] audit signatures.
+- [ ] secure MCP payload profile.
 
----
+Isso pode eventualmente justificar algo como:
 
-# 7. Risk Management
+**CryptoX Secure Agent Protocol Profile**
 
-The project must maintain an active security and engineering risk backlog.
-
-Each significant risk should include:
-
-- Identifier.
-- Description.
-- Affected component.
-- Impact.
-- Likelihood.
-- Severity.
-- Mitigation.
-- Responsible owner.
-- Status.
-- Evidence or reference.
-
-Security risks should be tracked through issues or security advisories according to disclosure sensitivity.
-
-Avoid publishing exploitable details of unresolved vulnerabilities when doing so would unnecessarily expose users.
+mas apenas em cima de primitives/protocolos revisados — não criando criptografia nova.
 
 ---
 
-# 8. Development Agent Workflow
+# Pós-quântico
 
-All agents contributing to CryptoX must follow this workflow:
+Deixar deliberadamente para depois da fundação estável.
 
-1. Read `AGENTS.md`.
-2. Read `ARCHITECTURE.md`.
-3. Read `ROADMAP.md`.
-4. Inspect the actual relevant source code.
-5. Identify the current milestone.
-6. Determine applicable security requirements.
-7. Design the smallest safe implementation increment.
-8. Implement or update tests.
-9. Implement the change.
-10. Run relevant quality and security checks.
-11. Update documentation when required.
-12. Report results, limitations, and remaining risks.
+- [ ] ML-KEM.
+- [ ] ML-DSA.
+- [ ] hybrid key establishment.
+- [ ] crypto agility.
+- [ ] migration strategy.
 
-Agents must not:
+Uma possibilidade futura:
 
-- Skip security analysis.
-- Invent cryptographic algorithms.
-- Introduce unsafe fallback behavior.
-- Claim formal security without appropriate evidence.
-- Implement unrelated roadmap phases prematurely.
-- Create unnecessary abstractions.
-- Weaken validation to make tests pass.
-- Ignore failed security checks.
-- Modify cryptographic formats without documentation.
+```text
+X25519 + ML-KEM
+```
 
-When uncertainty involves cryptographic composition, protocol correctness, or security guarantees, the agent must stop that sensitive implementation decision and document the unresolved issue for specialist review.
+para key establishment híbrido.
+
+Mas isso pertence ao futuro; não deve atrasar o `v1`.
 
 ---
 
-# 9. Progress Tracking
+# Prioridade real a partir de agora
 
-Every phase uses one of these statuses:
+## P0 — agora
 
-- **Not started**
-- **In progress**
-- **Blocked**
-- **Security review**
-- **Completed**
+1. **Revisão criptográfica independente do v2.**
+2. **Especificação formal do CryptoX Envelope.**
+3. **Interoperabilidade independente do streaming v2.**
+4. **Congelar parâmetros criptográficos do v2 somente após revisão.**
 
-The project must maintain accurate progress information.
+## P1 — imediatamente depois
 
-A phase must not be marked completed until its acceptance criteria have been satisfied.
+5. Implementar `envelope`.
+6. Consolidar API pública v2.
+7. Publicar corpus/vetores oficiais.
+8. Definir release experimental `v0.2.x / v0.3.x`.
 
-The agent must update phase status only when supported by actual implementation and test evidence.
+## P2 — próximo grande bloco
 
-## Current progress
+9. Key lifecycle.
+10. Secure storage.
+11. Rotation/revocation.
+12. Key IDs e purpose hierarchy.
 
-| Phase | Status |
-|---|---|
-| 0 — Security Audit | In progress |
-| 1 — Cryptographic Foundation | Not started |
-| 2 — Secure Streaming | Not started |
-| 3 — Key Management | Not started |
-| 4 — Identity | Not started |
-| 5 — E2EE | Not started |
-| 6 — Cross-Platform | Not started |
-| 7 — Security Review | Not started |
-| 8 — Stable Release | Not started |
-| 9 — Advanced Capabilities | Not started |
+## P3
 
-### Baseline evidence and remaining work
+13. Identity.
+14. X25519/Ed25519.
+15. Device/Agent Identity.
+16. Secure session adapters.
 
-This is an assessment dated 2026-10-18. Remote CI (ubuntu, macOS, Windows test
-matrix and the fuzz/vulnerability job) has been observed passing on `main`; that
-is execution evidence for those jobs, not a release or independent-review
-certification. Preparatory work does not satisfy the Phase 0 exit gate by itself.
+## P4
 
-| Evidence | What it establishes | What remains open |
-| --- | --- | --- |
-| `go.mod`, `keys/keys.go`, `stream/files.go`, `utils/aes-utils.go` | Inventory: one module, standard-library dependencies, key generation, legacy file operations, compatibility facade. | Reviewed replacement format and public core contracts. |
-| `keys/keys_test.go`, `stream/files_test.go`, `stream/parser_test.go`, `utils/aes-utils_test.go` | Executable tests for the implemented baseline, malformed input, I/O failures, facade behavior, known truncation limits, and concurrent round trips. | Complete security assessment, broader external vectors, and independent review. |
-| `Makefile`, `.github/workflows/ci.yml`, `.golangci.yml` | Local checks and configured multiplatform CI, fuzzing, linting, and vulnerability analysis. Remote CI runs (ubuntu/macOS/Windows and the fuzz job) have been observed passing on `main`. | Release controls, long-running fuzz campaigns, and independent review; passing CI jobs are execution evidence for those jobs, not for release artifacts. |
-| `keys/keys_bench_test.go`, `stream/files_bench_test.go` | Reproducible microbenchmarks for key generation and v1 file operations via `make bench`. | Published performance comparisons and AMD64/ARM64 results with recorded methodology. |
-| `README*.md`, `SECURITY.md` | Implemented features are distinguished from targets; current v1 limits and disclosure procedure are documented. | Resolution of the underlying cryptographic risks. |
-| `ARCHITECTURE.md`, `docs/adr/0001-legacy-validation.md` | Proposed boundaries and a recorded decision for baseline compatibility tests. | Architecture approval, specialist review, and Phase 1 entry requirements. |
+17. E2EE.
+18. multi-device.
+19. MLS.
+20. mobile.
 
-A reproducible benchmark suite exists (`make bench`), but no performance
-comparison or benchmark results are published yet. Test coverage is measured by
-`make check`; do not treat an old percentage as the current status. The minimum
-Go version was raised to 1.26, the oldest release still receiving security
-patches at the time of this change, so the CI no longer builds an end-of-life
-toolchain. Phases 1–9 remain not started as milestones, even though some
-preparatory testing, linting, and CI work already exists.
+## P5
 
-The [v1 risk register](ARCHITECTURE.md#146-legacy-v1-risk-register) now assigns
-CX-V1-001 through CX-V1-009 to findings, evidence, conditions, and residual work.
-The [replacement evaluation gate](ARCHITECTURE.md#147-replacement-format-evaluation-gate)
-defines criteria for construction selection; no replacement format is approved.
-
-The next increment is to compare established streaming constructions and maintained
-implementations in an ADR, then obtain the required review of the chosen assumptions.
-Architecture approval and Phase 1 entry criteria remain open. Do not implement or
-freeze a new cryptographic composition before that review.
-
-The construction comparison is recorded in
-[ADR 0002](docs/adr/0002-streaming-construction-selection.md), and the selected
-parameters are recorded in
-[docs/security/v2-streaming-design-review.md](docs/security/v2-streaming-design-review.md)
-(maintainer design review). Independent specialist review remains the Phase 0
-exit blocker before the v2 composition is implemented or frozen.
+21. auditoria completa.
+22. hardening.
+23. v1.0.
 
 ---
 
-# 10. Immediate Next Actions
+# Linha de evolução recomendada
 
-The first development iteration must focus exclusively on Phase 0.
-
-Required actions:
-
-1. Review the current repository.
-2. Inspect cryptographic implementations.
-3. Verify existing documentation claims.
-4. Identify unsafe behavior.
-5. Confirm architecture and trust boundaries.
-6. Define the first secure foundation milestone.
-7. Create a prioritized implementation backlog.
-8. Begin Phase 1 only after completing the Phase 0 exit gate.
-
-Do not attempt to implement all roadmap phases in a single iteration.
-
-Prefer small, independently testable and reviewable changes.
+```text
+                 CRYPTOX ATUAL
+                      │
+                      ▼
+        Independent Crypto Review
+                      │
+                      ▼
+              Freeze V2 Format
+                      │
+                      ▼
+                 Envelope
+                      │
+                      ▼
+          Key Management / Storage
+                      │
+                      ▼
+             Stable Crypto Core
+                      │
+               ┌──────┴──────┐
+               ▼             ▼
+           Identity       CryptoX 1.0
+               │
+               ▼
+         Secure Sessions
+               │
+          ┌────┴─────┐
+          ▼          ▼
+        E2EE      Agent-to-Agent
+          │          │
+          └────┬─────┘
+               ▼
+      Cross-platform ecosystem
+               │
+               ▼
+         Post-Quantum Hybrid
+```
 
 ---
 
-# 11. Long-Term Success Criteria
+# Estado resumido em outubro de 2026
 
-CryptoX will be considered successful when it provides:
+Minha classificação atual seria:
 
-- A stable, well-documented Go cryptographic API.
-- Verified authenticated encryption.
-- Secure and efficient streaming.
-- Reliable key management abstractions.
-- Clearly defined security guarantees.
-- Cross-platform interoperability.
-- Reusable identity components.
-- Integrations with established E2EE protocols.
-- Independent security assessments.
-- A sustainable open source development process.
-
-The long-term objective is not to maximize the number of cryptographic algorithms supported.
-
-**The objective is to provide dependable cryptographic building blocks that developers can integrate correctly, maintain confidently, and evaluate independently.**
+**Engineering maturity:** alta para estágio experimental
+**Cryptographic implementation:** boa base, ainda aguardando validação independente
+**Testing:** forte
+**CI/security tooling:** forte
+**Supply-chain preparation:** forte
+**Streaming:** v2 tecnicamente implementado
+**Envelope:** próximo componente crítico
+**Key management:** inicial
+**Secure storage:** não iniciado
+**Identity:** não iniciado
+**E2EE:** não iniciado
+**Production readiness:** ainda não
+**Potencial para virar protocolo:** sim, mas somente após especificações e interoperabilidade independentes
 
 ---
 
-## Final Principle
+# Próximo milestone recomendado
 
-> **CryptoX must evolve through verified security properties, not assumptions.**
+## `v0.2.0 — Cryptographic Foundation`
 
-Every milestone must increase reliability, clarity, auditability, or meaningful functionality without weakening the guarantees established by previous releases.
+Eu faria este ser o **primeiro milestone formal fechado**.
+
+Requisitos:
+
+- AEAD ✅
+- secure key generation ✅
+- HKDF ✅
+- key-purpose separation ✅
+- vectors ✅
+- fuzz ✅
+- CI ✅
+- security docs ✅
+- release infrastructure ✅
+- revisão independente dos parâmetros centrais ⏳
+
+Depois:
+
+## `v0.3.0 — Secure Streaming & Envelope`
+
+Com:
+
+- streaming v2;
+- formato congelado;
+- authenticated termination;
+- metadata binding;
+- envelope;
+- specification;
+- independent interoperability.
+
+Esse milestone é o ponto em que eu começaria a enxergar o CryptoX não apenas como biblioteca, mas como **uma especificação criptográfica implementável por terceiros**.
