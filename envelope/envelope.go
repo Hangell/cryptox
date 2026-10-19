@@ -70,15 +70,20 @@ func Seal(key, payload, keyID, aad []byte) ([]byte, error) {
 		return nil, fmt.Errorf("envelope: aad too long: %d > %d", len(aad), MaxAADLen)
 	}
 
-	g, err := newGCM(key)
-	if err != nil {
-		return nil, err
-	}
 	nonce := make([]byte, nonceLen)
 	if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
 		return nil, fmt.Errorf("envelope: generate nonce: %w", err)
 	}
+	return sealWithNonce(key, nonce, payload, keyID, aad)
+}
 
+// sealWithNonce is Seal with an explicit nonce, used by golden tests to produce
+// deterministic envelopes; production callers go through Seal.
+func sealWithNonce(key, nonce, payload, keyID, aad []byte) ([]byte, error) {
+	g, err := newGCM(key)
+	if err != nil {
+		return nil, err
+	}
 	header := buildHeader(SuiteAES256GCM, keyID, aad, nonce)
 	ct := g.Seal(nil, nonce, payload, header)
 
