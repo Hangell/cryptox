@@ -33,6 +33,17 @@ func encryptV2(dst io.Writer, src io.Reader, key, aad []byte) error {
 		return fmt.Errorf("v2: generate nonce prefix: %w", err)
 	}
 
+	return encryptV2WithSecrets(dst, src, key, aad, salt, noncePrefix)
+}
+
+// encryptV2WithSecrets is encryptV2 with explicit salt and nonce prefix. It
+// exists so golden tests can produce deterministic ciphertext with fixed
+// secrets; production callers go through encryptV2.
+func encryptV2WithSecrets(dst io.Writer, src io.Reader, key, aad []byte, salt [v2SaltLen]byte, noncePrefix [v2NoncePrefixLen]byte) error {
+	if len(key) != 32 {
+		return errors.New("v2 requires a 32-byte key")
+	}
+
 	hdr := buildV2Header(salt, noncePrefix)
 	derived := v2DeriveKey(key, salt, aad)
 	g, err := newV2GCM(derived)
