@@ -80,6 +80,45 @@ func TestV2ErrorClassification(t *testing.T) {
 	}
 }
 
+func TestV2AADSizeLimit(t *testing.T) {
+	key := bytes.Repeat([]byte{0x81}, 32)
+	maxAAD := bytes.Repeat([]byte{0x42}, MaxV2AADSize)
+	tooLargeAAD := bytes.Repeat([]byte{0x42}, MaxV2AADSize+1)
+
+	var ciphertext bytes.Buffer
+	e, err := NewEncryptor(&ciphertext, key, maxAAD)
+	if err != nil {
+		t.Fatalf("NewEncryptor rejected maximum AAD: %v", err)
+	}
+	if err := e.Close(); err != nil {
+		t.Fatalf("Close with maximum AAD: %v", err)
+	}
+	d, err := NewDecryptor(bytes.NewReader(ciphertext.Bytes()), key, maxAAD)
+	if err != nil {
+		t.Fatalf("NewDecryptor rejected maximum AAD: %v", err)
+	}
+	if _, err := io.ReadAll(d); err != nil {
+		t.Fatalf("Decryptor with maximum AAD: %v", err)
+	}
+
+	var oversizedOutput bytes.Buffer
+	if _, err := NewEncryptor(&oversizedOutput, key, tooLargeAAD); !errors.Is(err, ErrAADTooLarge) {
+		t.Fatalf("NewEncryptor oversized AAD: got %v, want ErrAADTooLarge", err)
+	}
+	if oversizedOutput.Len() != 0 {
+		t.Fatalf("NewEncryptor wrote %d bytes before rejecting oversized AAD", oversizedOutput.Len())
+	}
+	if _, err := NewDecryptor(bytes.NewReader(nil), key, tooLargeAAD); !errors.Is(err, ErrAADTooLarge) {
+		t.Fatalf("NewDecryptor oversized AAD: got %v, want ErrAADTooLarge", err)
+	}
+	if err := encryptV2(&bytes.Buffer{}, bytes.NewReader(nil), key, tooLargeAAD); !errors.Is(err, ErrAADTooLarge) {
+		t.Fatalf("encryptV2 oversized AAD: got %v, want ErrAADTooLarge", err)
+	}
+	if err := decryptV2(bytes.NewReader(nil), &bytes.Buffer{}, key, tooLargeAAD); !errors.Is(err, ErrAADTooLarge) {
+		t.Fatalf("decryptV2 oversized AAD: got %v, want ErrAADTooLarge", err)
+	}
+}
+
 func TestEncryptorDecryptorRoundTrip(t *testing.T) {
 	key := bytes.Repeat([]byte{0x5a}, 32)
 	aad := []byte("aad")

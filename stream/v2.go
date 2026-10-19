@@ -19,6 +19,11 @@ const (
 	v2DomainSepLabel           = "cryptox/v2/stream"
 )
 
+// MaxV2AADSize is the maximum caller-supplied associated-data length accepted
+// by the v2 stream APIs. This operational limit bounds the HKDF info buffer;
+// it is not a cryptographic usage bound.
+const MaxV2AADSize = 64 * 1024
+
 // v2RandomizerBytes is the total fresh randomness used per stream. A 32-byte
 // salt plus a 7-byte nonce prefix gives 312 bits, avoiding the v1 64-bit prefix
 // design that is collision-prone under key reuse.
@@ -36,6 +41,13 @@ func v2DomainSep(version, suite byte, aad []byte) []byte {
 	out = append(out, 0x00)
 	out = append(out, aad...)
 	return out
+}
+
+func validateV2AAD(aad []byte) error {
+	if len(aad) > MaxV2AADSize {
+		return ErrAADTooLarge
+	}
+	return nil
 }
 
 // v2SegmentIV builds the 12-byte AES-GCM nonce for a segment: the 7-byte nonce

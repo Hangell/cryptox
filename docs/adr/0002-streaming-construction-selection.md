@@ -213,8 +213,9 @@ CryptoX-specific-`info` compatibility decision.
 The v2 wire format is **pinned** — not frozen — at the state examined by the
 internal (automated-agent) design review (commit `5dca04f`). Freezing is
 reserved for #72, made only after the independent specialist review (#71). The
-corrections applied while resolving the internal review's findings do not
-change the wire format:
+wire format has not changed since `5dca04f`; the current implementation state
+is `41e38d2`. The corrections applied while resolving the internal review's
+findings do not change the wire format:
 
 - The `Encryptor` bug fix makes the public streaming API emit exactly the
   format already produced by `encryptV2WithSecrets` (no 0-byte final segment
@@ -252,9 +253,10 @@ Each is resolved as follows, with re-test evidence:
 **Approval status.** The independent specialist review (#71) was
 administratively closed by owner waiver without a review taking place.
 Consequently this ADR does **not** record a freeze, does **not** declare the
-parameters validated, and does **not** claim production readiness. The v2
-format remains pinned at `41e38d2`; the per-key budget remains a proposal; and
-the HS20 multi-user/multi-key bound remains an open item.
+parameters validated, and does **not** claim production readiness. The v2 wire
+format remains pinned at the internal-review state (`5dca04f`), unchanged in
+the current implementation (`41e38d2`); the per-key budget remains a proposal;
+and the HS20 multi-user/multi-key bound remains an open item.
 
 ---
 
@@ -307,7 +309,8 @@ the HS20 multi-user/multi-key bound remains an open item.
 - Preserves the explicit v1 no-migration policy; legacy ciphertext is never
   promoted to v2 guarantees.
 - The v2 wire format is pinned (not frozen) at the internal-review state
-  (`5dca04f`), with the P0.06 corrections applied; freezing awaits #72 after
-  the independent specialist review (#71). The concrete HS20 multi-key bounds
-  and the optional ChaCha20-Poly1305 suite remain open items that must be
-  resolved before any freeze or production-readiness claim.
+  (`5dca04f`); the P0.06 corrections do not change the wire format, and the
+  current implementation state is `41e38d2`. Freezing awaits #72 after the
+  independent specialist review (#71). The concrete HS20 multi-key bounds and
+  the optional ChaCha20-Poly1305 suite remain open items that must be resolved
+  before any freeze or production-readiness claim.

@@ -23,6 +23,9 @@ func encryptV2(dst io.Writer, src io.Reader, key, aad []byte) error {
 	if len(key) != 32 {
 		return ErrInvalidKey
 	}
+	if err := validateV2AAD(aad); err != nil {
+		return err
+	}
 
 	var salt [v2SaltLen]byte
 	var noncePrefix [v2NoncePrefixLen]byte
@@ -71,6 +74,9 @@ func encryptV2WithSecrets(dst io.Writer, src io.Reader, key, aad []byte, salt [v
 			data = buf[:n]
 			// A full-size segment is final only when no more input follows.
 			if _, perr := br.Peek(1); perr != nil {
+				if !errors.Is(perr, io.EOF) {
+					return fmt.Errorf("v2: peek plaintext: %w", perr)
+				}
 				final = true
 			}
 		case io.ErrUnexpectedEOF:
@@ -99,6 +105,9 @@ func encryptV2WithSecrets(dst io.Writer, src io.Reader, key, aad []byte, salt [v
 func decryptV2(src io.Reader, dst io.Writer, key, aad []byte) error {
 	if len(key) != 32 {
 		return ErrInvalidKey
+	}
+	if err := validateV2AAD(aad); err != nil {
+		return err
 	}
 
 	hdr := make([]byte, v2HeaderLen)
@@ -136,6 +145,9 @@ func decryptV2(src io.Reader, dst io.Writer, key, aad []byte) error {
 			// short (truncation) or GCM authentication fails; appended data is
 			// never silently accepted after the final segment.
 			if _, perr := br.Peek(1); perr != nil {
+				if !errors.Is(perr, io.EOF) {
+					return fmt.Errorf("v2: peek segment: %w", perr)
+				}
 				final = true
 			}
 		case io.ErrUnexpectedEOF:
