@@ -108,5 +108,6 @@ not be published.
 
 This document is part of the public contract. Changes to any surface above are
 recorded in the changelog and reviewed as a public-API change. The v2 wire
-format is frozen separately (see ADR 0002); API changes do not imply format
+format is pinned separately (see ADR 0002); its freeze awaits the specialist
+review (#71) and the approval decision (#72). API changes do not imply format
 changes and vice versa.

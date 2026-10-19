@@ -137,11 +137,13 @@ layout, but byte-for-byte cross-compatibility with Tink is not claimed.
 
 ## 8. Residual items for the independent specialist review
 
-The independent review was performed and recorded in
+An **internal** (automated-agent) design review was performed and recorded in
 [`docs/security/v2-independent-review.md`](v2-independent-review.md); its four
-findings are resolved in this document and in the implementation. The following
-items remain open and must be confirmed by a specialist before any production
-freeze:
+findings are resolved in this document and in the implementation. That internal
+review does **not** satisfy the independent specialist review (#71), which
+remains outstanding and is the subject of
+[`v2-specialist-review-package.md`](v2-specialist-review-package.md). The
+following items must be confirmed by a specialist before any freeze:
 
 1. Concrete multi-user / multi-key bounds for the chosen parameters (HS20), and
    the resulting **per-key** usage limit to publish (the per-stream limits are

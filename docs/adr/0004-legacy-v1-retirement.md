@@ -15,7 +15,8 @@ The repository still contains the legacy `SYM1` streaming format and the
 - `utils` re-exports the legacy file functions as a facade.
 
 The v2 format (`CXS2`) and Envelope v1 (`CXE1`) are the supported formats. v2
-is frozen and independently reviewed (ADR 0002).
+is pinned but not yet frozen or independently reviewed (ADR 0002); freezing
+awaits the specialist review (#71) and the approval decision (#72).
 
 ## Decision
 
