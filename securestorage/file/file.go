@@ -90,7 +90,13 @@ func (s *Store) Put(id interfaces.RecordID, data []byte, expected *interfaces.Ve
 	default:
 		current = cur.Version
 	}
-	if expected != nil && *expected != current {
+	if current == 0 {
+		// Insert-if-absent: expected==0 creates, any other non-zero expected
+		// conflicts with absence.
+		if expected != nil && *expected != 0 {
+			return interfaces.Record{}, interfaces.ErrConflict
+		}
+	} else if expected != nil && *expected != current {
 		return interfaces.Record{}, interfaces.ErrConflict
 	}
 

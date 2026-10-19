@@ -47,13 +47,16 @@ var (
 type Store interface {
 	// Get returns the record for id, or ErrNotFound.
 	Get(id RecordID) (Record, error)
-	// Put writes data for id. If expected is non-nil and does not equal the
-	// stored version, it fails with ErrConflict and changes nothing. The
-	// returned Record carries the new version.
+	// Put writes data for id. The expected version provides compare-and-swap:
+	//   - expected == nil: unconditional write (create or overwrite latest);
+	//   - expected != nil and *expected == 0: insert-if-absent (create only);
+	//     if a record already exists, ErrConflict is returned;
+	//   - expected != nil and *expected != 0: write only if the stored version
+	//     equals *expected, otherwise ErrConflict.
+	// A failed Put writes nothing. The returned Record carries the new version.
 	Put(id RecordID, data []byte, expected *Version) (Record, error)
-	// Delete logically deletes id. If expected is non-nil and does not match,
-	// it fails with ErrConflict and changes nothing. Deletion is logical:
-	// physical erasure is not guaranteed (see the spec).
+	// Delete logically deletes id. expected follows the same compare-and-swap
+	// rules as Put; deletion is logical and physical erasure is not guaranteed.
 	Delete(id RecordID, expected *Version) error
 	// List returns the identifiers of all non-deleted records.
 	List() ([]RecordID, error)

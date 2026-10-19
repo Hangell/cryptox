@@ -84,6 +84,8 @@ func (s *Store) Put(id interfaces.RecordID, data []byte, expected *interfaces.Ve
 		switch {
 		case errors.Is(err, interfaces.ErrNotFound):
 			currentVersion = 0
+			zero := interfaces.Version(0)
+			underlyingVersion = &zero // insert-if-absent
 		case err != nil:
 			return interfaces.Record{}, err
 		default:

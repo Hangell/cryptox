@@ -64,6 +64,23 @@ func Test(t *testing.T, newStore func() interfaces.Store) {
 		}
 	})
 
+	t.Run("InsertIfAbsent", func(t *testing.T) {
+		s := newStore()
+		zero := interfaces.Version(0)
+		if _, err := s.Put("a", []byte("v1"), &zero); err != nil {
+			t.Fatalf("insert-if-absent create: %v", err)
+		}
+		// A second insert-if-absent on the now-existing record conflicts.
+		if _, err := s.Put("a", []byte("v2"), &zero); !errors.Is(err, interfaces.ErrConflict) {
+			t.Fatalf("insert-if-absent on existing: got %v, want ErrConflict", err)
+		}
+		// A non-zero expected against an absent record conflicts.
+		one := interfaces.Version(1)
+		if _, err := s.Put("b", []byte("v1"), &one); !errors.Is(err, interfaces.ErrConflict) {
+			t.Fatalf("non-zero expected on absent: got %v, want ErrConflict", err)
+		}
+	})
+
 	t.Run("DeleteRemovesFromList", func(t *testing.T) {
 		s := newStore()
 		put, _ := s.Put("a", []byte("x"), nil)

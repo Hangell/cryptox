@@ -32,10 +32,18 @@ var (
 
 // Export encodes r into the versioned raw key format. It is the only path that
 // deliberately serializes key material; common logging and serialization of a
-// Record never does. The returned slice is independent of r.Secret.
+// Record never does. The returned slice is independent of r.Secret. It rejects
+// records whose purpose (>255 bytes) or secret (>65535 bytes) cannot be
+// represented by the format.
 func Export(r Record) ([]byte, error) {
 	if err := validateRecord(r); err != nil {
 		return nil, err
+	}
+	if len(r.Purpose) > 255 {
+		return nil, fmt.Errorf("%w: purpose too long (%d > 255)", ErrInvalidRecord, len(r.Purpose))
+	}
+	if len(r.Secret) > 65535 {
+		return nil, fmt.Errorf("%w: secret too long (%d > 65535)", ErrInvalidRecord, len(r.Secret))
 	}
 	buf := make([]byte, 0, 4+1+1+KeyIDLen+4+1+len(r.Purpose)+1+2+len(r.Secret))
 	buf = append(buf, exportMagic...)
@@ -66,6 +74,9 @@ func Import(data []byte) (Record, error) {
 		return Record{}, ErrMalformedExport
 	}
 	i := 4
+	if len(data) < i+1 {
+		return Record{}, ErrMalformedExport
+	}
 	if data[i] != exportVersion {
 		return Record{}, fmt.Errorf("%w: got %d, want %d", ErrUnsupportedExportVersion, data[i], exportVersion)
 	}

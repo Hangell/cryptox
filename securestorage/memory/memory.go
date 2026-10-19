@@ -30,6 +30,9 @@ func (s *Store) Get(id interfaces.RecordID) (interfaces.Record, error) {
 	if s.closed {
 		return interfaces.Record{}, interfaces.ErrClosed
 	}
+	if id == "" {
+		return interfaces.Record{}, interfaces.ErrInvalidID
+	}
 	r, ok := s.records[id]
 	if !ok {
 		return interfaces.Record{}, interfaces.ErrNotFound
@@ -57,7 +60,9 @@ func (s *Store) Put(id interfaces.RecordID, data []byte, expected *interfaces.Ve
 		s.records[id] = r
 		return copyRecord(r), nil
 	}
-	if expected != nil {
+	// Absent record: nil expected or expected==0 (insert-if-absent) creates;
+	// any other non-zero expected is a conflict.
+	if expected != nil && *expected != 0 {
 		return interfaces.Record{}, interfaces.ErrConflict
 	}
 	r := interfaces.Record{ID: id, Version: s.next, Data: append([]byte(nil), data...)}
@@ -71,6 +76,9 @@ func (s *Store) Delete(id interfaces.RecordID, expected *interfaces.Version) err
 	defer s.mu.Unlock()
 	if s.closed {
 		return interfaces.ErrClosed
+	}
+	if id == "" {
+		return interfaces.ErrInvalidID
 	}
 	r, ok := s.records[id]
 	if !ok {

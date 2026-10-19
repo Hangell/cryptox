@@ -47,7 +47,8 @@ func (f *fakeStore) Put(id interfaces.RecordID, data []byte, expected *interface
 		f.records[id] = r
 		return r, nil
 	}
-	if expected != nil {
+	// Insert-if-absent: expected==0 (or nil) creates; non-zero expected conflicts.
+	if expected != nil && *expected != 0 {
 		return interfaces.Record{}, interfaces.ErrConflict
 	}
 	r := interfaces.Record{ID: id, Version: f.next, Data: append([]byte(nil), data...)}
@@ -212,6 +213,37 @@ func TestEncryptedRejectsTamperingAndSubstitution(t *testing.T) {
 	}
 	if _, err := s.Get("a"); err == nil {
 		t.Fatal("substituted record accepted")
+	}
+}
+
+func TestEncryptedConcurrentCreateDistinctVersions(t *testing.T) {
+	s, _ := newTestStore(t)
+	const n = 16
+	var wg sync.WaitGroup
+	versions := make([]interfaces.Version, n)
+	for i := 0; i < n; i++ {
+		wg.Add(1)
+		go func(i int) {
+			defer wg.Done()
+			r, err := s.Put("fresh", []byte{byte(i)}, nil)
+			if err != nil {
+				t.Errorf("Put: %v", err)
+				return
+			}
+			versions[i] = r.Version
+		}(i)
+	}
+	wg.Wait()
+
+	seen := map[interfaces.Version]bool{}
+	for _, v := range versions {
+		if v == 0 {
+			t.Fatal("a create returned version 0")
+		}
+		if seen[v] {
+			t.Fatalf("duplicate version %d among concurrent creates", v)
+		}
+		seen[v] = true
 	}
 }
 

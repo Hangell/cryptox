@@ -3,8 +3,10 @@ package keyring
 import (
 	"bytes"
 	"errors"
+	"strings"
 	"testing"
 
+	"github.com/Hangell/cryptox/keys"
 	"github.com/Hangell/cryptox/keys/lifecycle"
 )
 
@@ -55,6 +57,7 @@ func TestImportRejectsMalformed(t *testing.T) {
 
 	cases := map[string][]byte{
 		"empty":            {},
+		"magic only":       []byte("CKKX"),
 		"bad magic":        append([]byte("XXXX"), valid[4:]...),
 		"truncated":        valid[:len(valid)-1],
 		"trailing garbage": append(append([]byte(nil), valid...), 0x00),
@@ -70,6 +73,18 @@ func TestImportRejectsMalformed(t *testing.T) {
 	badVersion[4] = 0x7f
 	if _, err := Import(badVersion); !errors.Is(err, ErrUnsupportedExportVersion) {
 		t.Fatalf("bad version: got %v", err)
+	}
+}
+
+func TestExportRejectsUnrepresentableLengths(t *testing.T) {
+	id := newTestID(t)
+	longPurpose := Record{ID: id, Version: 1, Purpose: keys.Purpose(strings.Repeat("a", 256)), State: lifecycle.StateActive, Secret: Secret{1}}
+	if _, err := Export(longPurpose); !errors.Is(err, ErrInvalidRecord) {
+		t.Fatalf("long purpose: got %v", err)
+	}
+	longSecret := Record{ID: id, Version: 1, Purpose: "p", State: lifecycle.StateActive, Secret: make(Secret, 65536)}
+	if _, err := Export(longSecret); !errors.Is(err, ErrInvalidRecord) {
+		t.Fatalf("long secret: got %v", err)
 	}
 }
 
