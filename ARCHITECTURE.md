@@ -284,8 +284,9 @@ As of Phase 3 start (2026-10-19), the repository contains these Go packages:
   (`securestorage/interfaces`) for the Phase 3 secure-storage layer.
 - `identity` — experimental identity track (Phase 4): `identity/credentials`
   provides versioned, purpose-bound, signed credentials with a canonical
-  encoding, and `identity/verification` provides domain-separated public-key
-  fingerprints for out-of-band comparison (ADR 0006).
+  encoding, `identity/verification` provides domain-separated public-key
+  fingerprints for out-of-band comparison, and `identity/devices` provides the
+  client-side enrollment/replacement/revocation state machine (ADR 0006).
 - `utils` — a deprecated compatibility facade over `keys` and `stream`. It is
   not part of the target tree and will be removed before the stable API
   (see ADR 0004).
@@ -305,7 +306,7 @@ never promoted to new security guarantees.
 | `aead` | Reuse | New Phase 1 package wrapping the Go standard library AES-256-GCM with a misuse-resistant API; no custom cipher construction. |
 | `envelope` | Reuse | New Phase 2 package implementing Envelope v1 over AES-256-GCM; format specified independently in `docs/spec/envelope-v1.md`. |
 | `securestorage` | Reuse | New Phase 3 package defining backend-independent storage contracts (`securestorage/interfaces`) implemented by filesystem, in-memory, and OS adapters. |
-| `identity` | Reuse | New experimental Phase 4 package providing signed, purpose-bound credentials (`identity/credentials`) and out-of-band fingerprints (`identity/verification`); isolated from the stable core per ADR 0006. |
+| `identity` | Reuse | New experimental Phase 4 package providing signed, purpose-bound credentials (`identity/credentials`), out-of-band fingerprints (`identity/verification`), and the enrollment/replacement/revocation state machine (`identity/devices`); isolated from the stable core per ADR 0006. |
 | `stream` (v1 format) | Replace | Lacks whole-file integrity and authenticated termination (CX-V1-001/003/004). Superseded by the v2 format selected in ADR 0002; v1 is never reinterpreted as v2. The reader parser may be adapted only as an isolated legacy reader with explicit no-migration documentation. |
 | `utils` | Remove | Deprecated facade that delegates to `keys` and `stream`. Remove with documented impact after the Phase 1/2 replacements; do not extend its API. |
 
