@@ -22,7 +22,7 @@ func EncryptFileV2(infile, outfile string, key, aad []byte) (err error) {
 	if err != nil {
 		return fmt.Errorf("v2: open input: %w", err)
 	}
-	defer in.Close()
+	defer func() { _ = in.Close() }()
 
 	out, err := os.CreateTemp(filepath.Dir(outfile), ".cryptox-*")
 	if err != nil {
@@ -30,7 +30,7 @@ func EncryptFileV2(infile, outfile string, key, aad []byte) (err error) {
 	}
 	tmp := out.Name()
 	defer func() {
-		out.Close()
+		_ = out.Close()
 		if err != nil {
 			_ = os.Remove(tmp)
 		}
@@ -69,7 +69,7 @@ func DecryptFileV2(infile, outfile string, key, aad []byte) (err error) {
 	if err != nil {
 		return fmt.Errorf("v2: open input: %w", err)
 	}
-	defer in.Close()
+	defer func() { _ = in.Close() }()
 
 	out, err := os.CreateTemp(filepath.Dir(outfile), ".cryptox-*")
 	if err != nil {
@@ -77,7 +77,7 @@ func DecryptFileV2(infile, outfile string, key, aad []byte) (err error) {
 	}
 	tmp := out.Name()
 	defer func() {
-		out.Close()
+		_ = out.Close()
 		if err != nil {
 			_ = os.Remove(tmp)
 		}
