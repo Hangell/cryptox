@@ -1,6 +1,7 @@
 package keyring
 
 import (
+	"bytes"
 	"errors"
 	"sync"
 	"testing"
@@ -133,6 +134,42 @@ func TestKeyringConcurrentAccess(t *testing.T) {
 		}()
 	}
 	wg.Wait()
+}
+
+func TestKeyringRotationHistoricalReads(t *testing.T) {
+	k := New()
+	id := newTestID(t)
+	if err := k.Add(Record{ID: id, Version: 1, Purpose: "storage", State: lifecycle.StateActive, Secret: Secret{1}}); err != nil {
+		t.Fatal(err)
+	}
+
+	active := k.Active("storage")
+	if len(active) != 1 || active[0].ID != id {
+		t.Fatalf("Active(storage) = %+v, want the single active key", active)
+	}
+
+	old, next, err := k.Rotate(id, Secret{2})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// New writes use only the new active key.
+	active = k.Active("storage")
+	if len(active) != 1 || active[0].ID != next.ID {
+		t.Fatalf("after rotation Active(storage) = %+v, want the new active key", active)
+	}
+
+	// The retired key is still resolvable for historical reads.
+	if old.State != lifecycle.StateRetired || !old.State.AllowsDecrypt() {
+		t.Fatalf("retired key should allow historical decrypt: %+v", old)
+	}
+	hist, err := k.Resolve(old.ID, old.Version, "storage")
+	if err != nil {
+		t.Fatalf("historical resolve: %v", err)
+	}
+	if !bytes.Equal(hist.Secret.Bytes(), Secret{1}) {
+		t.Fatalf("historical secret = %v, want the retired secret", hist.Secret)
+	}
 }
 
 func TestSecretRedacts(t *testing.T) {

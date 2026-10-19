@@ -134,7 +134,11 @@ func (k *Keyring) Resolve(id KeyID, version uint32, purpose keys.Purpose) (Recor
 
 // Rotate retires the current active version of id and adds a new version with a
 // fresh KeyID and the same purpose. It returns the old and new records.
-// Rotation requires the current record to be active.
+// Rotation requires the current record to be active. Rotation is atomic: on
+// success the old key is retired and the new key is active; if the new KeyID
+// cannot be generated or the secret is empty, the old key is left unchanged.
+// Historical reads continue through the retired record's KeyID (see Active and
+// Resolve).
 func (k *Keyring) Rotate(id KeyID, newSecret Secret) (old, new Record, err error) {
 	k.mu.Lock()
 	defer k.mu.Unlock()
@@ -199,6 +203,22 @@ func (k *Keyring) List() []Record {
 		}
 		return false
 	})
+	return out
+}
+
+// Active returns a snapshot of all active records matching purpose, ordered by
+// version ascending. The last element is the current write key; earlier
+// versions are retained for historical reads until retirement or revocation.
+func (k *Keyring) Active(purpose keys.Purpose) []Record {
+	k.mu.RLock()
+	defer k.mu.RUnlock()
+	var out []Record
+	for _, r := range k.records {
+		if r.State == lifecycle.StateActive && r.Purpose == purpose {
+			out = append(out, *r)
+		}
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].Version < out[j].Version })
 	return out
 }
 
