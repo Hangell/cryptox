@@ -22,6 +22,12 @@ const (
 )
 
 // EncryptLargeFiles encrypts a file in legacy v1 format. Use a fresh key per file.
+//
+// Publication contract: output is written to a unique temporary file and
+// atomically renamed over outfile on success, replacing any existing file. On
+// failure the temporary file is removed and an existing outfile is left
+// untouched. The destination directory is not fsynced, so power-loss
+// durability is not guaranteed.
 func EncryptLargeFiles(infile, outfile string, key []byte) (err error) {
 	switch len(key) {
 	case 16, 24, 32:
@@ -118,6 +124,12 @@ func EncryptLargeFiles(infile, outfile string, key []byte) (err error) {
 }
 
 // DecryptLargeFiles authenticates individual chunks, but cannot detect removed trailing chunks.
+//
+// Publication contract: output is written to a unique temporary file and
+// atomically renamed over outfile on success, replacing any existing file. On
+// failure the temporary file is removed and an existing outfile is left
+// untouched. The destination directory is not fsynced, so power-loss
+// durability is not guaranteed.
 func DecryptLargeFiles(infile, outfile string, key []byte) (err error) {
 	switch len(key) {
 	case 16, 24, 32:
