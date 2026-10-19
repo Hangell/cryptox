@@ -1,0 +1,78 @@
+{
+ "source": "https://github.com/C2SP/wycheproof",
+ "file": "testvectors_v1/aes_gcm_test.json",
+ "algorithm": "AES-256-GCM",
+ "note": "Curated subset for the cryptox aead package (12-byte nonce vectors).",
+ "vectors": [
+  {
+   "tcId": 91,
+   "flags": [
+    "Ktv"
+   ],
+   "comment": "",
+   "key": "92ace3e348cd821092cd921aa3546374299ab46209691bc28b8752d17f123c20",
+   "iv": "00112233445566778899aabb",
+   "aad": "00000000ffffffff",
+   "msg": "00010203040506070809",
+   "ct": "e27abdd2d2a53d2f136b",
+   "tag": "9a4a2579529301bcfb71c78d4060f52c",
+   "result": "valid"
+  },
+  {
+   "tcId": 98,
+   "flags": [
+    "Pseudorandom"
+   ],
+   "comment": "",
+   "key": "3b2458d8176e1621c0cc24c0c0e24c1e80d72f7ee9149a4b166176629616d011",
+   "iv": "45aaa3e5d16d2d42dc03445d",
+   "aad": "",
+   "msg": "3ff1514b1c503915918f0c0c31094a6e1f",
+   "ct": "73a6b6f45f6ccc5131e07f2caa1f2e2f56",
+   "tag": "2d7379ec1db5952d4e95d30c340b1b1d",
+   "result": "valid"
+  },
+  {
+   "tcId": 105,
+   "flags": [
+    "Pseudorandom"
+   ],
+   "comment": "",
+   "key": "5b1d1035c0b17ee0b0444767f80a25b8c1b741f4b50a4d3052226baa1c6fb701",
+   "iv": "d61040a313ed492823cc065b",
+   "aad": "",
+   "msg": "d096803181beef9e008ff85d5ddc38ddacf0f09ee5f7e07f1e4079cb64d0dc8f5e6711cd4921a7887de76e2678fdc67618f1185586bfea9d4c685d50e4bb9a82",
+   "ct": "c7d191b601f86c28b6a1bdef6a57b4f6ee3ae417bc125c381cdf1c4dac184ed1d84f1196206d62cad112b038845720e02c061179a8836f02b93fa7008379a6bf",
+   "tag": "f15612f6c40f2e0db6dc76fc4822fcfe",
+   "result": "valid"
+  },
+  {
+   "tcId": 112,
+   "flags": [
+    "Pseudorandom"
+   ],
+   "comment": "",
+   "key": "317ba331307f3a3d3d82ee1fdab70f62a155af14daf631307a61b187d413e533",
+   "iv": "a6687cf508356b174625deaa",
+   "aad": "",
+   "msg": "32c1d09107c599d3cce4e782179c966c6ef963689d45351dbe0f6f881db273e54db76fc48fdc5d30f089da838301a5f924bba3c044e19b3ed5aa6be87118554004ca30e0324337d987839412bf8f8bbdd537205d4b0e2120e965373235d6cbd2fb3776ba0a384ec1d9b7c631a0379ff997c3f974a6f7bbf4fd23016211f5fc10acadb5e400d2ff0fdfd193f5c6fc6d4f7271dfd1349ed80fbedaebb155b9b02fb3074495d55f9a2455f59bf6f113191a029c6b0ba75d97cdc0c84f131836337f29f9d96ca448eec0cc46d1ca8b3735661979d83302fec08fffcf5e58f12b1e7050657b1b97c64a4e07e317f554f8310b6ccb49f36d48c57816d24952aada711d4f",
+   "ct": "d7eebc9587aa21136fa38b41cf0e2db03a7ea2ba9eaddf83d33f781093617bf50f49b2bfe2f7173b113912e2e1775f40edfed8b3b0099b9e1c220dd103be6166210b01029feb24ed9e20614eddc3cebe41b0079a9a8c117b596c90288effd3796fbd0c7e8eab00609a64be3ad9597cdbf3a818c260cd938bdf232e4059ae35a2571a838887fc196912179486e046a62227a4caddce38cbbc37587bb9439ec637602b6818c5cbe3c71a7c4143960533dc74174bd315c8db227b69b55bb7fc30ba1d5213a752ec33925043cefbc1a62943ee5f34d5da01799e69094d732aef52f8e036980d0070e22e173c67c4bbcca61cc1eedbd6016516c592144819df13204dee",
+   "tag": "bf0540d34b20f761101bc608b02458f2",
+   "result": "valid"
+  },
+  {
+   "tcId": 130,
+   "flags": [
+    "ModifiedTag"
+   ],
+   "comment": "Flipped bit 0 in tag",
+   "key": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+   "iv": "505152535455565758595a5b",
+   "aad": "",
+   "msg": "202122232425262728292a2b2c2d2e2f",
+   "ct": "b2061457c0759fc1749f174ee1ccadfa",
+   "tag": "9de8fef6d8ab1bf1bf887232eab590dd",
+   "result": "invalid"
+  }
+ ]
+}
