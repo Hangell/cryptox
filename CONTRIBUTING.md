@@ -38,8 +38,12 @@ make fuzz
 `make check` verifies formatting, runs `go vet`, and runs tests with race detection
 and coverage. `make lint` runs golangci-lint with the configuration in
 `.golangci.yml`; install it first with `make lint-install`. `make fuzz` runs the
-existing legacy-format fuzz target for 30 seconds. See [README.md](README.md) for
-direct Go commands and vulnerability analysis.
+existing fuzz targets for 30 seconds each. The scheduled
+[extended fuzzing workflow](.github/workflows/fuzz.yml) runs longer campaigns;
+when it finds a crash, commit the minimized crasher from
+`<pkg>/testdata/fuzz/<FuzzName>/` as a regression seed and fix the defect before
+the parser ships. See [README.md](README.md) for direct Go commands and
+vulnerability analysis.
 
 For documentation-only changes, check relative links, examples, and consistency
 across translations; new tests or repeated fuzzing are not required without a
