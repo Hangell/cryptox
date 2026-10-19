@@ -102,6 +102,29 @@ func TestOpenRejectsMalformed(t *testing.T) {
 	}
 }
 
+func TestOpenRejectsMalformedWithoutPanic(t *testing.T) {
+	key := bytes.Repeat([]byte{0x06}, 32)
+	valid, _ := Seal(key, []byte("payload"), []byte("kid"), []byte("aad"))
+
+	// Each case is structurally invalid and must return an error, never panic.
+	cases := map[string][]byte{
+		"empty":              {},
+		"short magic":        valid[:3],
+		"wrong magic":        append(append([]byte(nil), []byte("XXXX")...), valid[4:]...),
+		"truncated header":   valid[:9],
+		"missing tag":        valid[:len(valid)-1],
+		"oversized keyIDLen": []byte("CXE1\x01\x00\x01\x41\x00\x00\x00\x0c" + string(make([]byte, 12))),
+		"bad nonce length":   []byte("CXE1\x01\x00\x01\x00\x00\x00\x0b" + string(make([]byte, 11))),
+	}
+	for name, data := range cases {
+		t.Run(name, func(t *testing.T) {
+			if opened, err := Open(key, data); err == nil && opened != nil {
+				t.Fatalf("malformed input accepted with payload %x", opened.Payload)
+			}
+		})
+	}
+}
+
 func TestSealRejectsInvalidInput(t *testing.T) {
 	if _, err := Seal(make([]byte, 16), nil, nil, nil); !errors.Is(err, ErrInvalidKey) {
 		t.Fatalf("short key: got err=%v", err)
