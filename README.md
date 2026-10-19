@@ -6,7 +6,7 @@
 
 CryptoX is evolving from a file-encryption utility into a general-purpose cryptographic toolkit. The goal is reusable, auditable components for encryption, key management, encrypted storage, identity, and integrations with established E2EE protocols, independent of cloud vendors, transports, databases, and application frameworks.
 
-> **Current status:** the code implements random AES key generation and legacy v1 file encryption. The v1 format authenticates individual chunks, **not the complete file**. It cannot detect removal of trailing chunks. Do not use this implementation where whole-file integrity is required. No independent security audit or production-readiness claim is made.
+> **Current status:** the code implements AES key generation, legacy v1 file encryption/decryption, the experimental v2 streaming format, Envelope v1, and experimental identity components. The legacy v1 format authenticates individual chunks, **not the complete file**. It cannot detect removal of trailing chunks. Do not use v1 where whole-file integrity is required. The v2 format and Envelope v1 are specified and tested but experimental (see below). No independent security audit or production-readiness claim is made.
 
 ## Why explore CryptoX?
 
@@ -31,7 +31,7 @@ Today, CryptoX is useful for evaluating the architecture, studying the existing 
 | `envelope` | `Seal` / `Open` | Envelope v1 versioned encrypted-object container (see `docs/spec/envelope-v1.md`). |
 | `utils` | The same legacy functions | Deprecated compatibility facade delegating to `keys` and `stream`. |
 
-The public APIs now cover AEAD, HKDF derivation, the v2 streaming format (via `io.Reader`/`io.Writer` and file adapters), and Envelope v1. The v2 stream format is frozen and independently reviewed (ADR 0002, `docs/security/v2-independent-review.md`); Envelope v1 is specified and tested but not yet independently reviewed. Still **not implemented**: secure storage, identities, E2EE session/ratchet adapters, replay protection, mobile bindings, and post-quantum support.
+The public APIs now cover AEAD, HKDF derivation, the v2 streaming format (via `io.Reader`/`io.Writer` and file adapters), and Envelope v1. The v2 stream format and Envelope v1 are specified and tested, but their parameters still await an independent specialist review and a format freeze — treat them as experimental. An internal design review exists (`docs/security/v2-independent-review.md`), but it is not an independent audit. Still **not implemented**: E2EE session/ratchet adapters, replay protection, mobile bindings, and post-quantum support. Secure storage (`securestorage`) and identity (`identity/*`) are implemented but experimental.
 
 The source declares Go 1.26 as its minimum compatibility level. Use a maintained Go toolchain for development and deployment; minimum source compatibility is not a security recommendation. The library core does not require CGO, but `go test -race` requires a supported platform and C toolchain.
 
@@ -162,7 +162,7 @@ The design follows modular and hexagonal principles: consumers use focused packa
 | --- | --- |
 | `aead` | ✅ Implemented — authenticated encryption and managed nonces (AES-256-GCM). |
 | `keys` expansion | Partially implemented — derivation and purpose separation exist; lifecycle and storage integration remain. |
-| `stream` replacement | ✅ v2 implemented — authenticated framing, metadata, ordering, and termination; v1 retained only as a legacy reader. |
+| `stream` replacement | ✅ v2 implemented — authenticated framing, metadata, ordering, and termination; v1 retained only as a legacy migration path (reader and writer), never reinterpreted as v2. |
 | `envelope` | ✅ Implemented — Envelope v1 versioned encrypted-object container. |
 | `securestorage` | Encrypted state and optional persistence adapters. |
 | `identity` / `pki` | Device identity, signatures, credentials, certificates, and trust validation. |

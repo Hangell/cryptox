@@ -5,8 +5,10 @@
 CryptoX is under development. No independently audited, production-ready release
 or supported security-maintenance window is declared by this policy.
 
-The current `stream` implementation uses the legacy v1 file format. It must not be
-used where whole-file integrity is required. Planned guarantees in
+The `stream` package provides the legacy v1 file format (reader and writer,
+retained only for migration) and the v2 stream format (implemented, but
+experimental and not yet independently reviewed). The v1 format must not be used
+where whole-file integrity is required. Planned guarantees in
 [ARCHITECTURE.md](ARCHITECTURE.md) are not guarantees of the current implementation.
 
 ## Supported guarantees (current implementation)
@@ -32,7 +34,7 @@ Assumptions: the caller supplies a suitable key, keeps it secret, uses a fresh
 key per v1 file, and writes to a trusted destination directory. The library does
 not enforce these policies; violating them voids the guarantees above.
 
-V2 format (implemented internally, not yet publicly exposed): the replacement
+V2 format (implemented and publicly exposed, experimental): the replacement
 format selected in
 [ADR 0002](docs/adr/0002-streaming-construction-selection.md) and specified in
 [docs/security/v2-streaming-design-review.md](docs/security/v2-streaming-design-review.md)
@@ -40,9 +42,10 @@ derives an independent per-stream key from a 312-bit randomizer (32-byte salt +
 7-byte nonce prefix) via HKDF. It therefore does not rely on a 64-bit nonce
 prefix under a caller-reused key, as v1 does. The v2 streaming encrypt/decrypt
 core is implemented and tested against truncation, reordering, duplication, and
-modification, but it is not yet exposed through a public API. These guarantees
-apply only after independent specialist review; the v1 risks below remain for
-legacy ciphertext.
+modification. Its parameters have not yet received an independent specialist
+review and the format is not frozen; treat v2 as experimental and do not
+attribute to it guarantees beyond those demonstrated by tests. The v1 risks
+below remain for legacy ciphertext.
 
 ## Known limitations
 

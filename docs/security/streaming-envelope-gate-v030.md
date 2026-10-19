@@ -20,7 +20,7 @@ complements. It does **not** publish a release tag.
 | Envelope limits + no-panic | tested | `TestOpenRejectsMalformedWithoutPanic` (P2.30) |
 | Envelope fuzzing in CI | scheduled + smoke | `.github/workflows/fuzz.yml`, `ci.yml` (P2.31) |
 | Legacy v1 retirement decision | recorded | ADR 0004 + `docs/security/v1-migration.md` (P2.35) |
-| Independent review of v2 parameters | linked | `docs/security/v2-independent-review.md`, ADR 0002 freeze |
+| Independent review of v2 parameters | **pending** | internal agent review recorded in `docs/security/v2-independent-review.md`; independent specialist review and format freeze remain open |
 
 ## Dependencies
 
@@ -37,8 +37,9 @@ complements. It does **not** publish a release tag.
 
 ## Format stability
 
-- The `CXS2` stream format is **frozen** at the independently reviewed state
-  (ADR 0002 freeze decision, `5dca04f`).
+- The `CXS2` stream format is **specified and pinned**, but **not frozen**: its
+  parameters have not yet received an independent specialist review, which
+  remains an open item (ADR 0002 freeze decision is pending that review).
 - Envelope v1 (`CXE1`) is **specified and pinned**; it has not yet received an
   independent specialist review, which remains an open item before any
   production-readiness claim.

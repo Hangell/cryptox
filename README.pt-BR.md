@@ -6,7 +6,7 @@
 
 O CryptoX está evoluindo de um utilitário de cifragem de arquivos para uma biblioteca criptográfica de propósito geral. O objetivo é oferecer componentes reutilizáveis e auditáveis para cifragem, gerenciamento de chaves, armazenamento cifrado, identidade e integração com protocolos E2EE estabelecidos, sem dependência de provedores de nuvem, transportes, bancos ou frameworks.
 
-> **Estado atual:** o código implementa geração aleatória de chaves AES e cifragem de arquivos no formato legado v1. Esse formato autentica chunks individuais, **não o arquivo completo**. Ele não detecta a remoção de chunks finais. Não use esta implementação quando houver exigência de integridade do arquivo completo. Não há alegação de auditoria independente ou prontidão para produção.
+> **Estado atual:** o código implementa geração de chaves AES, cifragem/decifragem no formato legado v1, o formato de streaming v2 (experimental), o Envelope v1 e componentes experimentais de identidade. O formato legado v1 autentica chunks individuais, **não o arquivo completo**, e não detecta a remoção de chunks finais. Não use o v1 quando houver exigência de integridade do arquivo completo. O formato v2 e o Envelope v1 estão especificados e testados, porém experimentais (veja abaixo). Não há alegação de auditoria independente ou prontidão para produção.
 
 ## Por que conhecer o CryptoX?
 
@@ -31,7 +31,7 @@ Hoje, o CryptoX serve para avaliar a arquitetura, estudar o formato existente e 
 | `envelope` | `Seal` / `Open` | Envelope v1, contêiner versionado de objetos cifrados (veja `docs/spec/envelope-v1.md`). |
 | `utils` | As mesmas funções legadas | Fachada obsoleta de compatibilidade que delega a `keys` e `stream`. |
 
-As APIs públicas agora cobrem AEAD, derivação HKDF, o formato de streaming v2 (via `io.Reader`/`io.Writer` e adaptadores de arquivo) e o Envelope v1. O formato v2 e o Envelope v1 estão especificados e testados, mas seus parâmetros aguardam revisão criptográfica independente e congelamento de formato — trate-os como experimentais. Ainda **não estão implementados**: armazenamento seguro, identidades, adaptadores de sessão/ratchet E2EE, proteção contra replay, bindings mobile e suporte pós-quântico.
+As APIs públicas agora cobrem AEAD, derivação HKDF, o formato de streaming v2 (via `io.Reader`/`io.Writer` e adaptadores de arquivo) e o Envelope v1. O formato v2 e o Envelope v1 estão especificados e testados, mas seus parâmetros aguardam revisão por especialista independente e congelamento de formato — trate-os como experimentais. Existe uma revisão interna de design (`docs/security/v2-independent-review.md`), que **não** é uma auditoria independente. Ainda **não estão implementados**: adaptadores de sessão/ratchet E2EE, proteção contra replay, bindings mobile e suporte pós-quântico. Armazenamento seguro (`securestorage`) e identidade (`identity/*`) estão implementados, porém experimentais.
 
 O código declara Go 1.26 como nível mínimo de compatibilidade. Use uma versão mantida do Go para desenvolver e executar aplicações; compatibilidade mínima de código não é recomendação de segurança. O núcleo não exige CGO, mas `go test -race` exige plataforma compatível e toolchain C.
 
@@ -162,7 +162,7 @@ O projeto segue princípios modulares e hexagonais: consumidores usam pacotes es
 | --- | --- |
 | `aead` | ✅ Implementado — cifragem autenticada e gerenciamento de nonces (AES-256-GCM). |
 | Expansão de `keys` | Parcialmente implementada — derivação e separação por finalidade existem; ciclo de vida e integração com armazenamento ficam pendentes. |
-| Substituição de `stream` | ✅ v2 implementado — enquadramento, metadados, ordenação e término autenticados; v1 mantido apenas como leitor legado. |
+| Substituição de `stream` | ✅ v2 implementado — enquadramento, metadados, ordenação e término autenticados; v1 mantido apenas como caminho de migração legado (leitura e escrita), nunca reinterpretado como v2. |
 | `envelope` | ✅ Implementado — contêiner versionado Envelope v1. |
 | `securestorage` | Estado cifrado e adaptadores opcionais de persistência. |
 | `identity` / `pki` | Identidade de dispositivos, assinaturas, credenciais, certificados e validação de confiança. |
