@@ -32,6 +32,16 @@ func TestMemoryStoreCopiesBuffers(t *testing.T) {
 	}
 }
 
+func TestMemoryStoreEmptyID(t *testing.T) {
+	s := New()
+	if _, err := s.Get(""); !errors.Is(err, interfaces.ErrInvalidID) {
+		t.Fatalf("Get empty id: got %v", err)
+	}
+	if err := s.Delete("", nil); !errors.Is(err, interfaces.ErrInvalidID) {
+		t.Fatalf("Delete empty id: got %v", err)
+	}
+}
+
 func TestMemoryStoreClosed(t *testing.T) {
 	s := New()
 	if err := s.Close(); err != nil {

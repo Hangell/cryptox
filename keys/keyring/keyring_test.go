@@ -116,6 +116,52 @@ func TestKeyringRevoke(t *testing.T) {
 	}
 }
 
+func TestKeyringReturnsIndependentSecret(t *testing.T) {
+	k := New()
+	id := newTestID(t)
+	if err := k.Add(Record{ID: id, Version: 1, Purpose: "p", State: lifecycle.StateActive, Secret: Secret{1, 2, 3}}); err != nil {
+		t.Fatal(err)
+	}
+	got, err := k.Get(id)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got.Secret[0] = 0xff
+	again, _ := k.Get(id)
+	if again.Secret[0] == 0xff {
+		t.Fatal("Get aliases the keyring's internal secret")
+	}
+
+	active := k.Active("p")
+	active[0].Secret[0] = 0xfe
+	after, _ := k.Get(id)
+	if after.Secret[0] == 0xfe {
+		t.Fatal("Active aliases the keyring's internal secret")
+	}
+}
+
+func TestKeyringRotateReturnsIndependentSecret(t *testing.T) {
+	k := New()
+	id := newTestID(t)
+	if err := k.Add(Record{ID: id, Version: 1, Purpose: "p", State: lifecycle.StateActive, Secret: Secret{1}}); err != nil {
+		t.Fatal(err)
+	}
+	old, next, err := k.Rotate(id, Secret{2})
+	if err != nil {
+		t.Fatal(err)
+	}
+	old.Secret[0] = 0xff
+	next.Secret[0] = 0xfe
+	got, _ := k.Get(id)
+	if got.Secret[0] == 0xff {
+		t.Fatal("Rotate old aliases internal secret")
+	}
+	gotNext, _ := k.Get(next.ID)
+	if gotNext.Secret[0] == 0xfe {
+		t.Fatal("Rotate new aliases internal secret")
+	}
+}
+
 func TestKeyringConcurrentAccess(t *testing.T) {
 	k := New()
 	id := newTestID(t)

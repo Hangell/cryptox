@@ -17,8 +17,8 @@ A store holds records identified by a non-empty `RecordID`. Each record has:
 | Operation | Contract |
 |---|---|
 | `Get(id)` | Returns the latest record or `ErrNotFound`. |
-| `Put(id, data, expected)` | Writes `data`. With `expected != nil`, it is a compare-and-swap: if `expected` does not equal the stored version, it fails with `ErrConflict` and writes nothing. Returns the new version. |
-| `Delete(id, expected)` | Logical deletion. With `expected != nil`, same CAS rule. Deleted records are omitted from `List`. |
+| `Put(id, data, expected)` | Writes `data`. `expected == nil` is an unconditional write; `*expected == 0` is insert-if-absent (fails with `ErrConflict` if the record exists); a non-zero `*expected` is a compare-and-swap against the stored version. Returns the new version. |
+| `Delete(id, expected)` | Logical deletion with the same CAS rules. Deleted records are omitted from `List`. |
 | `List()` | Returns the identifiers of all non-deleted records. |
 
 - Empty identifiers are rejected with `ErrInvalidID`.

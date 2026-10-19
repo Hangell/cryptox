@@ -102,7 +102,8 @@ func (k *Keyring) Add(r Record) error {
 	return nil
 }
 
-// Get returns the record for an exact KeyID, or ErrNotFound.
+// Get returns the record for an exact KeyID, or ErrNotFound. The returned
+// Secret is a copy, independent of the keyring's internal storage.
 func (k *Keyring) Get(id KeyID) (Record, error) {
 	k.mu.RLock()
 	defer k.mu.RUnlock()
@@ -110,12 +111,12 @@ func (k *Keyring) Get(id KeyID) (Record, error) {
 	if !ok {
 		return Record{}, ErrNotFound
 	}
-	return *r, nil
+	return copyRecord(*r), nil
 }
 
 // Resolve returns key material only for an exact (KeyID, version, purpose)
 // match. Unknown IDs, unknown versions, and incompatible purposes fail; no
-// metadata alone can authorize resolution.
+// metadata alone can authorize resolution. The returned Secret is a copy.
 func (k *Keyring) Resolve(id KeyID, version uint32, purpose keys.Purpose) (Record, error) {
 	k.mu.RLock()
 	defer k.mu.RUnlock()
@@ -129,7 +130,7 @@ func (k *Keyring) Resolve(id KeyID, version uint32, purpose keys.Purpose) (Recor
 	if r.Purpose != purpose {
 		return Record{}, ErrPurposeMismatch
 	}
-	return *r, nil
+	return copyRecord(*r), nil
 }
 
 // Rotate retires the current active version of id and adds a new version with a
@@ -157,7 +158,7 @@ func (k *Keyring) Rotate(id KeyID, newSecret Secret) (old, new Record, err error
 		return Record{}, Record{}, fmt.Errorf("%w: empty secret", ErrInvalidRecord)
 	}
 	r.State = lifecycle.StateRetired
-	old = *r
+	old = copyRecord(*r)
 
 	added := Record{
 		ID:      newID,
@@ -167,7 +168,7 @@ func (k *Keyring) Rotate(id KeyID, newSecret Secret) (old, new Record, err error
 		Secret:  append(Secret(nil), newSecret...),
 	}
 	k.records[newID] = &added
-	return old, added, nil
+	return old, copyRecord(added), nil
 }
 
 // Revoke moves a record to the terminal revoked state. Revoking an active or
@@ -186,13 +187,14 @@ func (k *Keyring) Revoke(id KeyID) error {
 	return nil
 }
 
-// List returns a snapshot of all records ordered by KeyID.
+// List returns a snapshot of all records ordered by KeyID. Returned Secrets are
+// copies, independent of internal storage.
 func (k *Keyring) List() []Record {
 	k.mu.RLock()
 	defer k.mu.RUnlock()
 	out := make([]Record, 0, len(k.records))
 	for _, r := range k.records {
-		out = append(out, *r)
+		out = append(out, copyRecord(*r))
 	}
 	sort.Slice(out, func(i, j int) bool {
 		a, b := out[i].ID, out[j].ID
@@ -209,13 +211,14 @@ func (k *Keyring) List() []Record {
 // Active returns a snapshot of all active records matching purpose, ordered by
 // version ascending. The last element is the current write key; earlier
 // versions are retained for historical reads until retirement or revocation.
+// Returned Secrets are copies.
 func (k *Keyring) Active(purpose keys.Purpose) []Record {
 	k.mu.RLock()
 	defer k.mu.RUnlock()
 	var out []Record
 	for _, r := range k.records {
 		if r.State == lifecycle.StateActive && r.Purpose == purpose {
-			out = append(out, *r)
+			out = append(out, copyRecord(*r))
 		}
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].Version < out[j].Version })
@@ -239,4 +242,10 @@ func validateRecord(r Record) error {
 		return fmt.Errorf("%w: empty secret", ErrInvalidRecord)
 	}
 	return nil
+}
+
+// copyRecord returns a deep copy of r so callers never alias internal storage.
+func copyRecord(r Record) Record {
+	r.Secret = append(Secret(nil), r.Secret...)
+	return r
 }
