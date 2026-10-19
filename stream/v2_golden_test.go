@@ -71,3 +71,46 @@ func TestV2GoldenEncryptReproduces(t *testing.T) {
 		t.Fatalf("golden ciphertext mismatch\n got: %x\nwant: %s", out.Bytes(), g.Ciphertext)
 	}
 }
+
+// TestV2Corpus verifies the pinned interop corpus (empty, segment-boundary,
+// and AAD cases) decrypts and re-encrypts deterministically.
+func TestV2Corpus(t *testing.T) {
+	b, err := os.ReadFile(filepath.Join("..", "testdata", "interop", "v2-corpus.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var corpus []v2Golden
+	if err := json.Unmarshal(b, &corpus); err != nil {
+		t.Fatal(err)
+	}
+	if len(corpus) == 0 {
+		t.Fatal("empty corpus")
+	}
+	for _, g := range corpus {
+		t.Run(g.Source, func(t *testing.T) {
+			d, err := NewDecryptor(bytes.NewReader(mustHex(t, g.Ciphertext)), mustHex(t, g.Key), mustHex(t, g.AAD))
+			if err != nil {
+				t.Fatal(err)
+			}
+			got, err := io.ReadAll(d)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !bytes.Equal(got, mustHex(t, g.Plaintext)) {
+				t.Fatalf("plaintext mismatch: got %x want %s", got, g.Plaintext)
+			}
+
+			var salt [v2SaltLen]byte
+			copy(salt[:], mustHex(t, g.Salt))
+			var prefix [v2NoncePrefixLen]byte
+			copy(prefix[:], mustHex(t, g.NoncePrefix))
+			var out bytes.Buffer
+			if err := encryptV2WithSecrets(&out, bytes.NewReader(mustHex(t, g.Plaintext)), mustHex(t, g.Key), mustHex(t, g.AAD), salt, prefix); err != nil {
+				t.Fatal(err)
+			}
+			if !bytes.Equal(out.Bytes(), mustHex(t, g.Ciphertext)) {
+				t.Fatalf("ciphertext mismatch: got %x want %s", out.Bytes(), g.Ciphertext)
+			}
+		})
+	}
+}

@@ -78,3 +78,44 @@ func TestEnvelopeGoldenSealReproduces(t *testing.T) {
 		t.Fatalf("ciphertext mismatch\n got: %x\nwant: %s", ct, g.Ciphertext)
 	}
 }
+
+// TestEnvelopeCorpus verifies the pinned interop corpus (empty and keyID/AAD
+// cases) opens and re-seals deterministically.
+func TestEnvelopeCorpus(t *testing.T) {
+	b, err := os.ReadFile(filepath.Join("..", "testdata", "interop", "envelope-corpus.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var corpus []envelopeGolden
+	if err := json.Unmarshal(b, &corpus); err != nil {
+		t.Fatal(err)
+	}
+	if len(corpus) == 0 {
+		t.Fatal("empty corpus")
+	}
+	for _, g := range corpus {
+		t.Run(g.Source, func(t *testing.T) {
+			opened, err := Open(hexBytes(t, g.Key), hexBytes(t, g.Ciphertext))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !bytes.Equal(opened.Payload, hexBytes(t, g.Payload)) {
+				t.Fatalf("payload mismatch: got %x want %s", opened.Payload, g.Payload)
+			}
+			if !bytes.Equal(opened.KeyID, hexBytes(t, g.KeyID)) {
+				t.Fatalf("key id mismatch: got %q", opened.KeyID)
+			}
+			if !bytes.Equal(opened.AAD, hexBytes(t, g.AAD)) {
+				t.Fatalf("aad mismatch: got %q", opened.AAD)
+			}
+
+			ct, err := sealWithNonce(hexBytes(t, g.Key), hexBytes(t, g.Nonce), hexBytes(t, g.Payload), hexBytes(t, g.KeyID), hexBytes(t, g.AAD))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !bytes.Equal(ct, hexBytes(t, g.Ciphertext)) {
+				t.Fatalf("ciphertext mismatch: got %x want %s", ct, g.Ciphertext)
+			}
+		})
+	}
+}
