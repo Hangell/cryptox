@@ -88,4 +88,6 @@ including version and suite fields. Rules:
   path or an explicit, user-visible statement that migration is unavailable.
 - The legacy `SYM1` format is deprecated with **no migration implementation**:
   callers must decrypt with an old build and re-encrypt. This is intentional
-  and will not change silently.
+  and will not change silently. See ADR 0004 and
+  [docs/security/v1-migration.md](../docs/security/v1-migration.md) for the
+  explicit migration path and its integrity caveats.
