@@ -115,6 +115,21 @@ func TestDecryptorEOFOnlyAfterFinalSegment(t *testing.T) {
 	}
 }
 
+func TestDecryptorRejectsTrailingDataAfterFinalSegment(t *testing.T) {
+	key := bytes.Repeat([]byte{0x66}, 32)
+	for _, size := range []int{0, 1, v2SegmentSize, v2SegmentSize + 7} {
+		ct := v2Encrypt(t, bytes.Repeat([]byte{0x77}, size), key, nil)
+		tampered := append(append([]byte(nil), ct...), 0xde, 0xad, 0xbe, 0xef)
+		got, err := v2DecryptAll(t, tampered, key, nil)
+		if err == nil {
+			t.Fatalf("size %d: trailing data after final segment was accepted (%d bytes)", size, len(got))
+		}
+		if errors.Is(err, io.EOF) {
+			t.Fatalf("size %d: trailing data reported as io.EOF instead of an integrity error", size)
+		}
+	}
+}
+
 func TestDecryptorTruncationReturnsErrorNotEOF(t *testing.T) {
 	key := bytes.Repeat([]byte{0x5c}, 32)
 	ct := v2Encrypt(t, bytes.Repeat([]byte{0x02}, v2SegmentSize+10), key, nil)

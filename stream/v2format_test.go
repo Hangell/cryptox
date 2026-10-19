@@ -137,6 +137,21 @@ func TestV2ReorderDuplicateMissingDetected(t *testing.T) {
 	}
 }
 
+func TestV2RejectsTrailingDataAfterFinalSegment(t *testing.T) {
+	// The format contract (design review §4) requires decryption to reject a
+	// final segment followed by any further segment. Appended bytes change the
+	// final segment's ciphertext boundary or its final-flag IV, so GCM
+	// authentication must fail; this locks that fail-closed behavior.
+	for _, size := range []int{0, 1, v2SegmentSize - 1, v2SegmentSize, 2*v2SegmentSize + 3} {
+		ct, key := roundTripV2(t, bytes.Repeat([]byte{0x09}, size), nil)
+		tampered := append(append([]byte(nil), ct...), 0xde, 0xad, 0xbe, 0xef)
+		var out bytes.Buffer
+		if err := decryptV2(bytes.NewReader(tampered), &out, key, nil); err == nil {
+			t.Fatalf("size %d: trailing data after final segment was accepted", size)
+		}
+	}
+}
+
 func TestV2HeaderTamperDetected(t *testing.T) {
 	ct, key := roundTripV2(t, []byte("header tamper test"), []byte("aad"))
 

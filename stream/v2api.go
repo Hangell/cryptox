@@ -214,6 +214,10 @@ func (d *Decryptor) nextSegment() error {
 	var final bool
 	switch readErr {
 	case nil:
+		// A full-size segment is final only when no more data follows.
+		// Trailing bytes keep it non-final, so the next read either fails
+		// short (truncation) or GCM authentication fails; appended data is
+		// never silently accepted after the final segment.
 		if _, perr := d.r.Peek(1); perr != nil {
 			final = true
 		}
