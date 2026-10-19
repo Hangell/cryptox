@@ -1,12 +1,15 @@
-# Independent review of the v2 streaming cryptographic parameters
+# Internal design review of the v2 streaming cryptographic parameters
 
-Status: recorded as the independent review required by Phase 0 (card P0.05).
-This is a separate reviewer's written assessment of ADR 0002 and the v2 design
-review; it is not the maintainer's self-review.
+Status: an **internal** design review by an automated agent. It does **not**
+satisfy the independent specialist review required by Phase 0 (card P0.05),
+which remains an open item before the v2 format is frozen or treated as
+production-ready. This document records the agent's written assessment of ADR
+0002 and the v2 design review; it is not the maintainer's self-review, but it is
+also not an independent audit.
 
 ## Review metadata
 
-- Reviewer: codex code-review agent (independent context, read-only).
+- Reviewer: codex code-review agent (automated, read-only).
 - Commit examined: `5dca04f` (merge of P1.25) and the referenced design documents.
 - Documents examined:
   - `docs/security/v2-streaming-design-review.md`
