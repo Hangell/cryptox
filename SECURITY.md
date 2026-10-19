@@ -73,20 +73,32 @@ format is required for complete stream authentication.
 ## Reporting a new vulnerability
 
 Do not publish keys, plaintext, credentials, customer data, or sensitive exploit
-details in public issues, pull requests, logs, or test fixtures.
+details in public issues, pull requests, logs, or test fixtures. Never post a
+proof-of-concept publicly.
 
-1. Check the repository's [Security page](https://github.com/Hangell/cryptox/security).
-   If **Report a vulnerability** is available, use that private reporting feature.
-2. If private reporting is unavailable, open an issue requesting a confidential
-   reporting channel without disclosing vulnerability details. Wait for the
-   maintainer to establish a private channel before sharing sensitive information.
-3. In the private report, include the affected revision, Go version, operating
-   system, relevant API, impact, assumptions, and a minimal reproduction using
-   synthetic data. Explain whether the issue differs from the limitations above.
+Use a confidential channel, in this order:
 
-This policy does not assert that GitHub private reporting is enabled. No response
-SLA, bounty, or guaranteed remediation date is established. Disclosure timing
-should be coordinated privately with the maintainer.
+1. GitHub Security Advisory / Private Vulnerability Reporting at
+   <https://github.com/Hangell/cryptox/security/advisories/new>. If the
+   **Report a vulnerability** button is not visible, the maintainer enables it
+   in Settings → Code security and analysis → Private vulnerability reporting.
+2. Email the maintainer at **rodrigo@hangell.org** with the subject
+   `[CryptoX security]`. This channel is always available and is the documented
+   fallback, not conditional on GitHub settings.
+
+In the report include the affected revision, Go version, operating system,
+relevant API, impact, assumptions, and a minimal reproduction using synthetic
+data. State whether the issue differs from the limitations above.
+
+Triage and remediation (best-effort, no SLA, no bounty):
+
+1. Acknowledge the report privately within 7 days.
+2. Assess severity (CVSS) and confirm scope with the reporter.
+3. Prepare the fix in a private branch or GitHub security advisory.
+4. Publish the advisory and credit the reporter after the fix is released.
+
+Supported versions: no releases are published yet. Once releases exist, only the
+latest stable release line is supported.
 
 ## Changes and releases
 
