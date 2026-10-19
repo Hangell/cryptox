@@ -169,9 +169,7 @@ Esta fase avançou muito além do status antigo do roadmap.
 # Fase 2 — Secure Streaming & Envelope
 
 **Target:** `v0.3.0`
-**Estado:** **Em andamento**
-
-Essa deve ser a **prioridade principal de desenvolvimento agora**.
+**Estado:** **Concluída** (gate fechado em docs/security/streaming-envelope-gate-v030.md)
 
 ## Streaming v2 — já implementado
 
@@ -232,31 +230,31 @@ Envelope
 
 ### Tasks
 
-- [ ] Definir especificação `CryptoX Envelope v1`.
-- [ ] Definir serialização canônica.
-- [ ] Definir magic independente.
-- [ ] Definir versionamento.
-- [ ] Definir algorithm/suite identifiers.
-- [ ] Autenticar metadata crítica.
-- [ ] Estabelecer limites explícitos.
-- [ ] Rejeitar versões desconhecidas.
-- [ ] Rejeitar campos duplicados/ambíguos.
-- [ ] Fuzzar o parser.
-- [ ] Criar vetores externos.
-- [ ] Publicar especificação independente da implementação.
+- [x] Definir especificação `CryptoX Envelope v1` (docs/spec/envelope-v1.md).
+- [x] Definir serialização canônica (buildHeader).
+- [x] Definir magic independente (`CXE1`).
+- [x] Definir versionamento (version 0x01).
+- [x] Definir algorithm/suite identifiers (suite 0x0001 = AES-256-GCM).
+- [x] Autenticar metadata crítica (header como AAD).
+- [x] Estabelecer limites explícitos (keyIDLen ≤ 64, aadLen ≤ 65535, nonce = 12).
+- [x] Rejeitar versões desconhecidas (ErrUnsupportedVersion).
+- [x] Rejeitar campos duplicados/ambíguos (ordem fixa, sem terminadores).
+- [x] Fuzzar o parser (FuzzOpen + CI).
+- [x] Criar vetores externos (golden + corpus oficial).
+- [x] Publicar especificação independente da implementação.
 
 ## Interoperabilidade
 
-Também falta fortalecer:
-
-- [ ] implementação independente capaz de consumir v2;
-- [ ] vetor compatível/verificável contra construção Tink;
-- [ ] corpus binário oficial CryptoX;
-- [ ] testes golden cross-version.
+- [x] implementação independente capaz de consumir v2 (testdata/interop/ref.py);
+- [x] vetor compatível/verificável contra construção Tink — equivalência de construção separada de compatibilidade binária (sem wire-compat com Tink);
+- [x] corpus binário oficial CryptoX (testdata/interop/*-corpus.json);
+- [x] testes golden cross-version (Go CI + referência Python).
 
 ## Gate
 
 > Um arquivo produzido por CryptoX deve poder ser especificado, validado e implementado por outra equipe sem consultar o código Go.
+>
+> **Status: gate fechado** (ver docs/security/streaming-envelope-gate-v030.md).
 
 Esse é um gate importantíssimo se o CryptoX quiser um dia se tornar protocolo.
 
