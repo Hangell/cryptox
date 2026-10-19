@@ -3,6 +3,7 @@ package keys
 import (
 	"bytes"
 	"encoding/hex"
+	"errors"
 	"testing"
 )
 
@@ -135,21 +136,34 @@ func TestDeriveKeyRejectsInvalidInput(t *testing.T) {
 		root    []byte
 		purpose Purpose
 		length  int
+		class   error
 	}{
-		{"short root", bytes.Repeat([]byte{0x42}, 31), "p", 32},
-		{"empty purpose", root, "", 32},
-		{"nul purpose", root, "a\x00b", 32},
-		{"non-ascii purpose", root, "café", 32},
-		{"too-long purpose", root, Purpose(bytes.Repeat([]byte("x"), 256)), 32},
-		{"length too small", root, "p", 15},
-		{"length too large", root, "p", maxDerivedKeyLen + 1},
+		{"short root", bytes.Repeat([]byte{0x42}, 31), "p", 32, ErrInvalidKeyMaterial},
+		{"empty purpose", root, "", 32, ErrInvalidPurpose},
+		{"nul purpose", root, "a\x00b", 32, ErrInvalidPurpose},
+		{"non-ascii purpose", root, "café", 32, ErrInvalidPurpose},
+		{"too-long purpose", root, Purpose(bytes.Repeat([]byte("x"), 256)), 32, ErrInvalidPurpose},
+		{"length too small", root, "p", 15, ErrInvalidLength},
+		{"length too large", root, "p", maxDerivedKeyLen + 1, ErrInvalidLength},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			if got, err := DeriveKey(tc.root, tc.purpose, tc.length); err == nil || got != nil {
+			got, err := DeriveKey(tc.root, tc.purpose, tc.length)
+			if err == nil || got != nil {
 				t.Fatalf("expected error, got key %x", got)
 			}
+			if !errors.Is(err, tc.class) {
+				t.Fatalf("got err=%v, want class %v", err, tc.class)
+			}
 		})
+	}
+}
+
+func TestGenerateKeyRejectsInvalidSize(t *testing.T) {
+	if got, err := GenerateKey(20); err == nil || got != nil {
+		t.Fatalf("expected error, got key %x", got)
+	} else if !errors.Is(err, ErrInvalidKeySize) {
+		t.Fatalf("got err=%v, want ErrInvalidKeySize", err)
 	}
 }
 

@@ -21,7 +21,7 @@ const v2TagSize = 16
 // duplicating, or truncating records fails decryption.
 func encryptV2(dst io.Writer, src io.Reader, key, aad []byte) error {
 	if len(key) != 32 {
-		return errors.New("v2 requires a 32-byte key")
+		return ErrInvalidKey
 	}
 
 	var salt [v2SaltLen]byte
@@ -41,7 +41,7 @@ func encryptV2(dst io.Writer, src io.Reader, key, aad []byte) error {
 // secrets; production callers go through encryptV2.
 func encryptV2WithSecrets(dst io.Writer, src io.Reader, key, aad []byte, salt [v2SaltLen]byte, noncePrefix [v2NoncePrefixLen]byte) error {
 	if len(key) != 32 {
-		return errors.New("v2 requires a 32-byte key")
+		return ErrInvalidKey
 	}
 
 	hdr := buildV2Header(salt, noncePrefix)
@@ -98,13 +98,13 @@ func encryptV2WithSecrets(dst io.Writer, src io.Reader, key, aad []byte, salt [v
 // authentication failure, and never writes plaintext past a failed segment.
 func decryptV2(src io.Reader, dst io.Writer, key, aad []byte) error {
 	if len(key) != 32 {
-		return errors.New("v2 requires a 32-byte key")
+		return ErrInvalidKey
 	}
 
 	hdr := make([]byte, v2HeaderLen)
 	if _, err := io.ReadFull(src, hdr); err != nil {
-		if err == io.EOF {
-			return errors.New("v2: truncated header")
+		if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
+			return fmt.Errorf("%w: truncated header", ErrTruncated)
 		}
 		return fmt.Errorf("v2: read header: %w", err)
 	}
@@ -140,18 +140,18 @@ func decryptV2(src io.Reader, dst io.Writer, key, aad []byte) error {
 			}
 		case io.ErrUnexpectedEOF:
 			if n < v2TagSize {
-				return errors.New("v2: final segment shorter than authentication tag")
+				return fmt.Errorf("%w: final segment shorter than authentication tag", ErrTruncated)
 			}
 			final = true
 		case io.EOF:
-			return errors.New("v2: truncated stream: missing authenticated final segment")
+			return fmt.Errorf("%w: missing authenticated final segment", ErrTruncated)
 		default:
 			return fmt.Errorf("v2: read segment: %w", readErr)
 		}
 
 		plaintext, err := openV2Segment(g, noncePrefix, uint32(counter), final, buf[:n])
 		if err != nil {
-			return fmt.Errorf("v2: segment %d: %w", counter, err)
+			return fmt.Errorf("%w: segment %d: %v", ErrAuthentication, counter, err)
 		}
 		if _, err := dst.Write(plaintext); err != nil {
 			return fmt.Errorf("v2: write plaintext: %w", err)

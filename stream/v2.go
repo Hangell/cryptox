@@ -2,7 +2,6 @@ package stream
 
 import (
 	"encoding/binary"
-	"errors"
 	"fmt"
 )
 
@@ -69,19 +68,19 @@ func buildV2Header(salt [v2SaltLen]byte, noncePrefix [v2NoncePrefixLen]byte) [v2
 // reinterpreted as v2.
 func parseV2Header(h []byte) (salt [v2SaltLen]byte, noncePrefix [v2NoncePrefixLen]byte, err error) {
 	if len(h) != v2HeaderLen {
-		return salt, noncePrefix, fmt.Errorf("invalid v2 header length: got %d, want %d", len(h), v2HeaderLen)
+		return salt, noncePrefix, fmt.Errorf("%w: header length: got %d, want %d", ErrMalformed, len(h), v2HeaderLen)
 	}
 	if string(h[0:4]) != v2Magic {
-		return salt, noncePrefix, fmt.Errorf("invalid v2 magic: got %q, want %q", string(h[0:4]), v2Magic)
+		return salt, noncePrefix, fmt.Errorf("%w: magic: got %q, want %q", ErrMalformed, string(h[0:4]), v2Magic)
 	}
 	if h[4] != v2Version {
-		return salt, noncePrefix, fmt.Errorf("unsupported v2 version: got %d, want %d", h[4], v2Version)
+		return salt, noncePrefix, fmt.Errorf("%w: version: got %d, want %d", ErrUnsupported, h[4], v2Version)
 	}
 	if h[5] != v2SuiteAES256GCMHKDFSHA256 {
-		return salt, noncePrefix, fmt.Errorf("unsupported v2 suite: got %d, want %d", h[5], v2SuiteAES256GCMHKDFSHA256)
+		return salt, noncePrefix, fmt.Errorf("%w: suite: got %d, want %d", ErrUnsupported, h[5], v2SuiteAES256GCMHKDFSHA256)
 	}
 	if h[6] != v2SaltLen {
-		return salt, noncePrefix, errors.New("invalid v2 salt length")
+		return salt, noncePrefix, fmt.Errorf("%w: salt length: got %d, want %d", ErrMalformed, h[6], v2SaltLen)
 	}
 	copy(salt[:], h[7:7+v2SaltLen])
 	copy(noncePrefix[:], h[7+v2SaltLen:])

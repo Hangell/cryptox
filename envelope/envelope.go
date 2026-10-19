@@ -93,8 +93,13 @@ func sealWithNonce(key, nonce, payload, keyID, aad []byte) ([]byte, error) {
 	return out, nil
 }
 
-// Open parses, validates, authenticates, and decrypts an envelope. It returns
-// ErrAuthentication (with no payload) on any authentication or format failure.
+// Open parses, validates, authenticates, and decrypts an envelope. On failure
+// it returns no payload. Errors are classifiable with errors.Is:
+//
+//   - ErrInvalidKey when the key is not 32 bytes;
+//   - ErrMalformed for structurally invalid input;
+//   - ErrUnsupportedVersion / ErrUnsupportedSuite for unknown version or suite;
+//   - ErrAuthentication when GCM authentication fails.
 func Open(key, data []byte) (*Opened, error) {
 	if len(key) != 32 {
 		return nil, ErrInvalidKey
@@ -163,7 +168,7 @@ func parse(data []byte) (*parsed, error) {
 		return nil, ErrMalformed
 	}
 	if string(data[:4]) != Magic {
-		return nil, errors.New("envelope: invalid magic")
+		return nil, fmt.Errorf("%w: invalid magic", ErrMalformed)
 	}
 	i = 4
 
@@ -212,7 +217,7 @@ func parse(data []byte) (*parsed, error) {
 	nLen := int(data[i])
 	i++
 	if nLen != nonceLen {
-		return nil, fmt.Errorf("envelope: invalid nonce length %d", nLen)
+		return nil, fmt.Errorf("%w: invalid nonce length %d", ErrMalformed, nLen)
 	}
 	if len(data) < i+nLen {
 		return nil, ErrMalformed

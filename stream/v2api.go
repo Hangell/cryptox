@@ -9,6 +9,25 @@ import (
 	"io"
 )
 
+// Errors returned by the v2 stream API. Callers can classify failures with
+// errors.Is. None of these errors carries key material, nonce material, or
+// plaintext.
+var (
+	// ErrInvalidKey indicates the supplied key is not 32 bytes.
+	ErrInvalidKey = errors.New("stream: key must be 32 bytes")
+	// ErrAuthentication indicates a segment failed authentication or the
+	// stream was modified; no plaintext is returned in this case.
+	ErrAuthentication = errors.New("stream: authentication failed")
+	// ErrTruncated indicates the stream ended without an authenticated final
+	// segment (or its final segment was shorter than an authentication tag).
+	ErrTruncated = errors.New("stream: truncated or missing authenticated final segment")
+	// ErrMalformed indicates structurally invalid input (header, lengths).
+	ErrMalformed = errors.New("stream: malformed input")
+	// ErrUnsupported indicates an unknown version or suite, which is never
+	// downgraded or reinterpreted.
+	ErrUnsupported = errors.New("stream: unsupported version or suite")
+)
+
 // This file exposes the v2 format as explicit io.Reader / io.WriteCloser
 // contracts. The security boundary is the final segment: plaintext read or
 // written before finalization is segment-authenticated only, not whole-stream
@@ -34,7 +53,7 @@ type Encryptor struct {
 // returned Encryptor is nil and w must not be reused for this stream.
 func NewEncryptor(w io.Writer, key, aad []byte) (*Encryptor, error) {
 	if len(key) != 32 {
-		return nil, errors.New("v2 requires a 32-byte key")
+		return nil, ErrInvalidKey
 	}
 	var salt [v2SaltLen]byte
 	var prefix [v2NoncePrefixLen]byte
@@ -156,14 +175,15 @@ type Decryptor struct {
 // validated immediately.
 func NewDecryptor(r io.Reader, key, aad []byte) (*Decryptor, error) {
 	if len(key) != 32 {
-		return nil, errors.New("v2 requires a 32-byte key")
+		return nil, ErrInvalidKey
 	}
+
 	br := bufio.NewReaderSize(r, v2SegmentSize+v2TagSize)
 
 	hdr := make([]byte, v2HeaderLen)
 	if _, err := io.ReadFull(br, hdr); err != nil {
-		if err == io.EOF {
-			return nil, errors.New("v2: truncated header")
+		if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
+			return nil, fmt.Errorf("%w: truncated header", ErrTruncated)
 		}
 		return nil, fmt.Errorf("v2: read header: %w", err)
 	}
@@ -223,18 +243,18 @@ func (d *Decryptor) nextSegment() error {
 		}
 	case io.ErrUnexpectedEOF:
 		if n < v2TagSize {
-			return errors.New("v2: final segment shorter than authentication tag")
+			return fmt.Errorf("%w: final segment shorter than authentication tag", ErrTruncated)
 		}
 		final = true
 	case io.EOF:
-		return errors.New("v2: truncated stream: missing authenticated final segment")
+		return fmt.Errorf("%w: missing authenticated final segment", ErrTruncated)
 	default:
 		return fmt.Errorf("v2: read segment: %w", readErr)
 	}
 
 	plaintext, err := openV2Segment(d.g, d.prefix, uint32(d.counter), final, d.segBuf[:n])
 	if err != nil {
-		return fmt.Errorf("v2: segment %d: %w", d.counter, err)
+		return fmt.Errorf("%w: segment %d: %v", ErrAuthentication, d.counter, err)
 	}
 	d.pending = plaintext
 	if final {

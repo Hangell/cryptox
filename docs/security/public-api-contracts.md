@@ -43,8 +43,9 @@ release notes.
 
 | Symbol | Contract |
 |---|---|
-| `type Purpose string` | Domain-separation context; validated as non-empty printable ASCII without NUL, ≤ 255 bytes. |
-| `DeriveKey(root []byte, purpose Purpose, length int) ([]byte, error)` | HKDF-SHA-256 (RFC 5869) with empty salt and `info = "cryptox/v1/kdf" ‖ 0x00 ‖ purpose`. Requires `len(root) ≥ 32`; length ∈ [16, 255·32]. |
+| `type Purpose string` | Domain-separation context; validated as non-empty printable ASCII without NUL, ≤ 255 bytes (`ErrInvalidPurpose`). |
+| `DeriveKey(root []byte, purpose Purpose, length int) ([]byte, error)` | HKDF-SHA-256 (RFC 5869) with empty salt and `info = "cryptox/v1/kdf" ‖ 0x00 ‖ purpose`. Requires `len(root) ≥ 32` (`ErrInvalidKeyMaterial`); length ∈ [16, 255·32] (`ErrInvalidLength`). |
+| `GenerateKey(size int) ([]byte, error)` | Random AES key of 16, 24, or 32 bytes; any other size returns `ErrInvalidKeySize`. |
 
 - `root` must be high-entropy keying material. This is not a password KDF.
 
@@ -61,10 +62,14 @@ release notes.
 
 | Symbol | Contract |
 |---|---|
-| `NewEncryptor(w io.Writer, key, aad []byte) (*Encryptor, error)` | Writes the header immediately. Requires a 32-byte key. `Encryptor` is an `io.WriteCloser`; `Close` is mandatory and idempotent. |
+| `NewEncryptor(w io.Writer, key, aad []byte) (*Encryptor, error)` | Writes the header immediately. Requires a 32-byte key (`ErrInvalidKey`). `Encryptor` is an `io.WriteCloser`; `Close` is mandatory and idempotent. |
 | `NewDecryptor(r io.Reader, key, aad []byte) (*Decryptor, error)` | `Decryptor` is an `io.Reader`; `Read` returns `io.EOF` only after the final segment is authenticated. Any error before `io.EOF` means the stream was truncated, modified, or reordered, and the plaintext must not be treated as complete. |
 | `EncryptFileV2(infile, outfile string, key, aad []byte) error` | Publishes via a temp file + atomic rename on success only. |
 | `DecryptFileV2(infile, outfile string, key, aad []byte) error` | Authenticates the entire stream before publishing; on error the destination is untouched. |
+
+Errors are classifiable with `errors.Is` via the exported sentinels
+`ErrInvalidKey`, `ErrMalformed`, `ErrUnsupported`, `ErrAuthentication`, and
+`ErrTruncated`. No error carries key material, nonce material, or plaintext.
 
 - `Encryptor`/`Decryptor` are not safe for concurrent use.
 - Neither type has a usable zero value; both are constructor-only.
