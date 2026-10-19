@@ -132,6 +132,9 @@ func decryptV2(src io.Reader, dst io.Writer, key, aad []byte) error {
 		switch readErr {
 		case nil:
 			// A full-size segment is final only when no more data follows.
+			// Trailing bytes keep it non-final, so the next read either fails
+			// short (truncation) or GCM authentication fails; appended data is
+			// never silently accepted after the final segment.
 			if _, perr := br.Peek(1); perr != nil {
 				final = true
 			}
