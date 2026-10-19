@@ -215,6 +215,35 @@ def main():
         "envelope encrypt mismatch"
     )
 
+    # Verify the full interop corpus (empty, segment boundaries, AAD, keyID).
+    v2_corpus = json.load(
+        open(os.path.join(REPO, "testdata", "interop", "v2-corpus.json"))
+    )
+    for entry in v2_corpus:
+        k = hex2b(entry["key"])
+        a = hex2b(entry["aad"])
+        s = hex2b(entry["salt"])
+        p = hex2b(entry["noncePrefix"])
+        c = hex2b(entry["ciphertext"])
+        m = hex2b(entry["plaintext"])
+        assert v2_decrypt(c, k, a) == m, "v2 corpus decrypt mismatch: " + entry["name"]
+        assert v2_encrypt(m, k, a, s, p) == c, "v2 corpus encrypt mismatch: " + entry["name"]
+
+    env_corpus = json.load(
+        open(os.path.join(REPO, "testdata", "interop", "envelope-corpus.json"))
+    )
+    for entry in env_corpus:
+        k = hex2b(entry["key"])
+        n = hex2b(entry["nonce"])
+        kd = hex2b(entry["keyID"])
+        a = hex2b(entry["aad"])
+        p = hex2b(entry["payload"])
+        c = hex2b(entry["ciphertext"])
+        payload, gkid, gaad = envelope_decrypt(c, k)
+        assert payload == p, "envelope corpus payload mismatch: " + entry["name"]
+        assert gkid == kd and gaad == a, "envelope corpus meta mismatch: " + entry["name"]
+        assert envelope_encrypt(p, k, kd, a, n) == c, "envelope corpus encrypt mismatch: " + entry["name"]
+
     print("interop OK: v2 stream and Envelope v1 match in both directions")
 
 
