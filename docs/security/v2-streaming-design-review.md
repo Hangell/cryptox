@@ -111,7 +111,9 @@ only (see above). CryptoX does not currently advertise a validated per-key
 bound; a concrete multi-key/multi-user limit remains an open item from the
 independent review (see §8). Until such a bound is established, operators
 should limit total bytes per key conservatively and treat the per-stream
-`<= 2^48` byte bound as a stream-level, not key-level, guarantee.
+`<= 2^48` byte bound as a stream-level, not key-level, guarantee. See
+[`docs/security/key-usage-limits.md`](key-usage-limits.md) for the full
+unit/assumption/enforcement table.
 
 ## 6. Fork-safety and process model
 
