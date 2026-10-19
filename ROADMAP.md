@@ -964,6 +964,13 @@ implementations in an ADR, then obtain the required review of the chosen assumpt
 Architecture approval and Phase 1 entry criteria remain open. Do not implement or
 freeze a new cryptographic composition before that review.
 
+The construction comparison is recorded in
+[ADR 0002](docs/adr/0002-streaming-construction-selection.md), and the selected
+parameters are recorded in
+[docs/security/v2-streaming-design-review.md](docs/security/v2-streaming-design-review.md)
+(maintainer design review). Independent specialist review remains the Phase 0
+exit blocker before the v2 composition is implemented or frozen.
+
 ---
 
 # 10. Immediate Next Actions
