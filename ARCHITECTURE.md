@@ -1009,6 +1009,10 @@ However:
 
 Once a stable release is published, compatibility must be managed deliberately.
 
+The operational versioning and release rules (SemVer for the module vs. the
+`SYM1`/`CXS2`/`CXE1` format identifiers, minimum Go, support window, protected
+tags, and changelog) are published in [docs/versioning.md](../docs/versioning.md).
+
 ---
 
 ## 21. Architecture Governance
