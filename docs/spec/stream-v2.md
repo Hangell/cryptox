@@ -155,7 +155,9 @@ specification and review. Unknown values are rejected; there is no negotiation
 and no insecure fallback. A future ChaCha20-Poly1305 suite is reserved (ADR 0003)
 and would be a new suite identifier.
 
-Freezing a version or suite identifier remains reserved to an approval
-decision (#72). Because the independent specialist review (#71) was
-administratively waived without a review, **no freeze is in effect for `CXS2`**
-and its parameters are not validated.
+The P0.06 decision recorded for implementation commit
+`d1b69ce798c181232c97f269adcdf672f5169b31` is **no-go for freeze**. The
+independent specialist review (#71) was administratively waived without a
+review; **no freeze is in effect for `CXS2`**, its parameters are not validated,
+and this specification does not approve production use. Reconsidering a freeze
+requires a fresh review of the exact commit and validated parameters.

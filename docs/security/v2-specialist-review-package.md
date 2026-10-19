@@ -8,8 +8,11 @@ the requirement.
 
 ## Target
 
-- **Commit to review:** `41e38d2eae536a3816fe1a7617babd23eb33b6cf`
-  (`main`, merge of PR #90).
+- **Current implementation commit for any future review:**
+  `d1b69ce798c181232c97f269adcdf672f5169b31` (`main`, merge of PR #94).
+  The wire-format baseline recorded by the internal review remains `5dca04f`;
+  the current commit adds no wire-format change. A reviewer must state the exact
+  commit actually examined.
 - **Construction:** STREAM (HRRV15) instantiated as AES-256-GCM-HKDF-SHA-256,
   CryptoX-specific header and HKDF `info` (not Tink wire-compatible).
 
@@ -85,25 +88,28 @@ human specialist focus on the remaining proof and parameter work.
 
 ### Findings and conclusion (AI assessment)
 
-1. **Open technical blocker for #31/#72 — no concrete advantage calculation.**
-   The documents do not derive a numeric multi-user bound for the stated
-   root-key budgets and exact query limits. Keep the proposed values marked
-   experimental; do not freeze the format or describe the budget as validated
-   on this basis.
-2. **Follow-up required before relying on the budget — AAD units.**
-   `key-usage-limits.md` says AAD contributes to GCM block/tag bounds. That is
-   true for one-shot `aead.Seal`/`Open`; v2 stream AAD is instead input to HKDF
-   `info`. State separate accounting and bound the accepted AAD length and its
-   allocation cost. Also set a cumulative ciphertext/block budget for failed
-   `Open` and stream-decryption attempts; a count of attempts alone is not a
-   GCM verification bound when their lengths are unbounded.
-3. **Separate implementation finding — I/O lookahead errors.** In
-   `stream/v2format.go`, `Peek(1)` treats every non-nil error as end-of-stream.
-   A non-EOF source error after a full segment can therefore be treated as a
-   final segment instead of being propagated. Review the matching lookahead
-   paths in `stream/v2api.go` and file adapters; only EOF should establish that
-   no next byte exists. This is outside the parameter proof, but should be
-   tracked before claiming robust stream I/O behavior.
+1. **Open technical blocker for any future freeze (#72) — no concrete
+   advantage calculation.** The documents do not derive a numeric multi-user
+   bound for the stated root-key budgets and exact query limits. The #31
+   tracking card was closed by owner acceptance of this residual risk, but the
+   proposed values remain experimental; do not freeze the format or describe
+   the budget as validated on this basis.
+2. **AAD accounting follow-up — operational issue addressed; cryptographic
+   budget still open.** The earlier assessment correctly noted that v2 stream
+   AAD is input to HKDF `info`, not GCM AAD. Card #31 now separates one-shot
+   GCM-AAD accounting from v2 HKDF-input accounting and caps v2 AAD at 64 KiB
+   per call. That cap limits processing/allocation; it does not establish a
+   per-key bound. Aggregate ciphertext/block budgets for failed `Open` and
+   stream-decryption attempts, and the complete multi-user bound, remain
+   unvalidated.
+3. **Separate implementation finding — I/O lookahead errors (resolved in
+   PR #94).** The original `Peek(1)` paths could treat a non-EOF source error
+   after a full segment as end-of-stream. The current `stream/v2format.go` and
+   `stream/v2api.go` propagate non-EOF errors; `stream/v2_lookahead_test.go`
+   covers encrypt, decrypt, and the public `Decryptor` path, plus a clean-EOF
+   regression. The file adapters route through these implementations. This
+   fixes the I/O finding but does not resolve the cryptographic parameter
+   blocker.
 
 **AI conclusion:** the byte layouts, randomizer arithmetic, and per-stream
 counter bound are consistent with the implementation and the Tink construction
@@ -115,11 +121,23 @@ be treated as technical confirmation of the proposed budgets.
 
 ### Follow-up to the AI assessment
 
-The subsequent #31 work adds a 64 KiB operational cap for v2 AAD and separates
-that HKDF-input/resource limit from GCM's GHASH accounting. It also withdraws
-the earlier simplified combined GCM advantage claim. This does not resolve the
-per-key cryptographic budget: aggregate failed-decryption work and the exact
-HS20 multi-user bound still lack a validated numeric limit.
+The #31 follow-up adds a 64 KiB operational cap for v2 AAD and separates that
+HKDF-input/resource limit from GCM's GHASH accounting. It also withdraws the
+earlier simplified combined GCM advantage claim. The owner closed #31 tracking
+with this residual uncertainty explicitly accepted; this is not a technical
+validation. Aggregate failed-decryption work and the exact HS20 multi-user
+bound still lack validated numeric limits.
+
+### P0.06 disposition — no freeze
+
+The project owner requested closure of the #72 tracking card as a no-freeze
+decision. The ADR and current implementation are pinned at commit
+`d1b69ce798c181232c97f269adcdf672f5169b31`; the wire-format basis reviewed
+internally remains `5dca04f`. The changes through PR #94 do not alter the wire
+format and their targeted Go tests pass. No independent cryptographic review
+occurred, no per-key parameters are approved, and v2 remains experimental. This
+disposition records no-go for format freeze and production approval; it does
+not close the technical blockers for a future freeze.
 
 ### Human project-owner gate — authorization recorded
 
@@ -131,9 +149,11 @@ HS20 multi-user bound still lack a validated numeric limit.
   specialist-review requirement for card tracking.
 - **Evidence:** commit `3fccf5b86e26e3f3e7568bfd1ee3fd05864272d3`;
   `go test -count=1 ./aead ./keys ./stream` passed.
-- **Scope:** This owner waiver closes the tracking task only. It does not claim
-  independent cryptographic review, confirm the proposed per-key bounds, or
-  approve format freeze. Those technical limitations remain open for #31/#72.
+- **Scope:** This owner waiver closes the #71 tracking task only. It does not
+  claim independent cryptographic review, confirm the proposed per-key bounds,
+  or approve format freeze. The #31 tracking card may close by explicit owner
+  acceptance of the residual risk; the technical limitations remain blockers
+  to any future freeze in #72.
 
 Primary references for the human review include [HRRV15](https://eprint.iacr.org/2015/189),
 [HS20](https://eprint.iacr.org/2020/1019),
@@ -147,7 +167,7 @@ Primary references for the human review include [HRRV15](https://eprint.iacr.org
 # Independent specialist review — v2 streaming parameters
 
 - **Reviewer:** <name / organization>
-- **Commit examined:** 41e38d2eae536a3816fe1a7617babd23eb33b6cf
+- **Commit examined:** <exact commit actually reviewed>
 - **Date:** <YYYY-MM-DD>
 - **Hypotheses:** <trust model, threat model, randomness assumptions>
 
@@ -174,6 +194,7 @@ Primary references for the human review include [HRRV15](https://eprint.iacr.org
 
 ## After the review
 
-The confirmed values must be propagated consistently to `key-usage-limits.md`,
-`v2-streaming-design-review.md`, `stream-v2.md`, and the READMEs before #31 is
-closed. Format freeze and the ADR 0002 approval decision then proceed in #72.
+If a future independent review confirms or reduces values, propagate them
+consistently to `key-usage-limits.md`, `v2-streaming-design-review.md`,
+`stream-v2.md`, and the READMEs. Format freeze remains a separate decision and
+must not proceed until the technical blockers are resolved.
