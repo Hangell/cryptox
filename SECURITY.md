@@ -32,6 +32,15 @@ Assumptions: the caller supplies a suitable key, keeps it secret, uses a fresh
 key per v1 file, and writes to a trusted destination directory. The library does
 not enforce these policies; violating them voids the guarantees above.
 
+Planned v2 guarantees (not yet implemented): the replacement format selected in
+[ADR 0002](docs/adr/0002-streaming-construction-selection.md) and specified in
+[docs/security/v2-streaming-design-review.md](docs/security/v2-streaming-design-review.md)
+derives an independent per-stream key from a 312-bit randomizer (32-byte salt +
+7-byte nonce prefix) via HKDF. It therefore does not rely on a 64-bit nonce
+prefix under a caller-reused key, as v1 does. These guarantees apply only once
+the v2 format is implemented and independently reviewed; the v1 risks below
+remain for legacy ciphertext.
+
 ## Known limitations
 
 - Each chunk is authenticated independently. Removing complete trailing chunks
