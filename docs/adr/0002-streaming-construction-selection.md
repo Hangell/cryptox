@@ -71,9 +71,9 @@ Supporting decisions:
   ciphertext that ends on a non-final segment is rejected as truncated.
 - Associated data binds the whole stream through the HKDF `info` input, not
   per-segment AAD (per-segment AAD is empty in Tink).
-- Pure Go, no CGO. Standard library plus `x/crypto/hkdf`. If implemented against
-  `go 1.19`-era APIs, no toolchain bump is forced (unlike adopting tink-go,
-  which currently requires Go 1.25).
+- Pure Go, no CGO. Standard library plus `x/crypto/hkdf`; no adoption of
+  tink-go or age as dependencies. (Historical note: this ADR was written while
+  `go.mod` declared `go 1.19`; the module now declares `go 1.26`.)
 - Tink documents a fork-safety limitation that must be respected.
 
 ### Alternative B — libsodium `crypto_secretstream` (XChaCha20-Poly1305), CGO binding
@@ -151,9 +151,10 @@ Dependencies and platform constraints (capture date 2026-10-18):
 - **libsodium**: C99 + optional assembly; ISC; needs a C toolchain and a CGO
   wrapper for Go; cross-compilation to Windows/macOS/Android/iOS is the caller's
   burden.
-- The current repository declares `go 1.19`. A pure-Go reimplementation of the
-  STREAM construction using stdlib plus `golang.org/x/crypto/hkdf` avoids a
-  toolchain bump; adopting tink-go or age as dependencies does not.
+- At the time this ADR was written the repository declared `go 1.19`; it now
+  declares `go 1.26` (2026-10-18). A pure-Go reimplementation using stdlib plus
+  `golang.org/x/crypto/hkdf` adds no dependency and no toolchain bump beyond the
+  declared floor.
 
 ---
 
