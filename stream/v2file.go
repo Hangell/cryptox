@@ -1,7 +1,6 @@
 package stream
 
 import (
-	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -15,7 +14,7 @@ import (
 // outfile is left untouched. The destination directory is not fsynced.
 func EncryptFileV2(infile, outfile string, key, aad []byte) (err error) {
 	if len(key) != 32 {
-		return errors.New("v2 requires a 32-byte key")
+		return ErrInvalidKey
 	}
 
 	in, err := os.Open(infile)
@@ -62,7 +61,7 @@ func EncryptFileV2(infile, outfile string, key, aad []byte) (err error) {
 // error the temporary file is removed and an existing outfile is untouched.
 func DecryptFileV2(infile, outfile string, key, aad []byte) (err error) {
 	if len(key) != 32 {
-		return errors.New("v2 requires a 32-byte key")
+		return ErrInvalidKey
 	}
 
 	in, err := os.Open(infile)
