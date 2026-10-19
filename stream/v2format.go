@@ -199,6 +199,13 @@ func openV2Segment(g cipher.AEAD, noncePrefix [v2NoncePrefixLen]byte, counter ui
 // streamHKDFSHA256 implements HKDF-SHA-256 (RFC 5869) over stdlib HMAC. It is
 // kept local to stream to avoid exporting a generic key-derivation API; the
 // purpose-separated public API lives in package keys.
+//
+// Duplication review (P1.25): this mirrors keys.hkdfSHA256 byte-for-byte for
+// the same inputs. Both are verified against RFC 5869 (keys A.1–A.3, stream
+// A.1–A.3) and against Wycheproof HKDF-SHA-256 (keys). No divergence was found;
+// the duplication is intentional and is not refactored cosmetically at this
+// stage. The stream variant is only called with a fixed 32-byte output, while
+// keys.DeriveKey enforces the RFC 5869 length limits.
 func streamHKDFSHA256(ikm, salt, info []byte, length int) []byte {
 	hashLen := sha256.Size
 	if salt == nil {
