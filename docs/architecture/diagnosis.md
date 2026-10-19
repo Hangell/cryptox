@@ -1,9 +1,61 @@
 # Diagnóstico e evolução incremental
 
-> Registro histórico anterior aos testes ampliados e à configuração de CI.
-> As ações e políticas abaixo descrevem aquele incremento, não obrigações futuras.
-> Estado atual: [ROADMAP.md](../../ROADMAP.md#current-progress).
-> Política de compatibilidade: [ARCHITECTURE.md](../../ARCHITECTURE.md#20-versioning-and-compatibility).
+## Estado atual (2026-10-18, commit 3a588eb)
+
+> Reconciliado com o código no commit `3a588eb` e com as alterações locais de
+> documentação. O [registro histórico](#registro-histórico) abaixo permanece
+> como contexto do incremento inicial e **não** descreve o estado atual.
+> Política de compatibilidade: [ARCHITECTURE.md](../../ARCHITECTURE.md).
+
+### Inventário por pacote
+
+| Pacote | Status | Evidência |
+| --- | --- | --- |
+| `keys` | implementado | `GenerateKey` (`crypto/rand`) e `DeriveKey` (HKDF-SHA-256 com `Purpose`); vetores RFC 5869. |
+| `aead` | implementado | AES-256-GCM `Seal`/`Open`; vetor NIST GCM TC15 e Wycheproof. |
+| `stream` | implementado (v1 e v2) | v1 legado (`EncryptLargeFiles`/`DecryptLargeFiles`/`ValidateHeader`); v2 (`NewEncryptor`/`NewDecryptor`, `EncryptFileV2`/`DecryptFileV2`) com terminação autenticada. |
+| `envelope` | implementado | Envelope v1 `Seal`/`Open`; especificação em `docs/spec/envelope-v1.md`. |
+| `utils` | implementado (deprecado) | Fachada de compatibilidade delegando a `keys`/`stream`. |
+| `securestorage`, `identity`, `e2ee`, `pki` | ausente | Sem implementação nesta entrega. |
+
+### Mapa de dependências
+
+- consumidor → `utils` → `stream`/`keys` → biblioteca padrão.
+- consumidor → `stream` (v2) → biblioteca padrão (`crypto/aes`, `crypto/cipher`, `crypto/hmac`, `crypto/sha256`, `crypto/rand`).
+- consumidor → `aead` → biblioteca padrão.
+- consumidor → `envelope` → biblioteca padrão.
+- Nenhuma dependência externa, CGO, serviço obrigatório ou telemetria.
+
+### Matriz de riscos (atual)
+
+| Risco | Status | Evidência | Tratamento |
+| --- | --- | --- | --- |
+| v1: truncamento silencioso (CX-V1-001) | aberto (v1) | `TestV1TrailingTruncation` | Substituído pelo v2; v1 nunca reinterpretado como v2. |
+| v1: prefixo de nonce de 64 bits (CX-V1-002) | aberto (v1) | `EncryptLargeFiles` | v2 deriva chave por stream (randomizer de 312 bits). |
+| v2: parâmetros sem revisão independente | aberto (v2) | ADR 0002 + design review | Bloqueia congelamento do formato; card #71. |
+| stream/envelope: sem vetor independente | aberto | corpus golden (regression pin) | Vetor Tink/externo pendente; cards #73 e #78. |
+| Publicação de arquivo: durabilidade | documentado | `publication_test.go`, §7.4 | Não-garantia explicitada por plataforma. |
+
+### Reconciliação de cards (implementações vs. granular)
+
+Os cards granulares #19–#69 (Fases 1–2) foram entregues pelas issues e PRs já
+incorporados; não devem ser duplicados:
+
+| Cards | Entrega |
+| --- | --- |
+| P1.01–P1.04, P1.05–P1.15, P1.21–P1.22 | `aead` + `keys` (issues #19, #20, #21) |
+| P1.16–P1.20, P1.23–P1.24 | CI, Makefile, lint, release (issues #24, #26, #27) |
+| P2.01–P2.22 | streaming v2 + file adapters (issues #16, #17, #22, #23) |
+| P2.23–P2.29 | Envelope v1 (PR envelope) |
+
+Cards sobrepostos devem ser encerrados/revisados pelo codex com referência à
+evidência acima; este documento não os marca como concluídos.
+
+## Registro histórico
+
+> Incremento inicial anterior aos testes ampliados e à configuração de CI.
+> As ações e políticas abaixo descrevem aquele incremento, não o estado atual.
+> Política de compatibilidade: [ARCHITECTURE.md](../../ARCHITECTURE.md).
 
 Data: 2026-10-18. Escopo: estado local anterior à implantação do CI.
 
