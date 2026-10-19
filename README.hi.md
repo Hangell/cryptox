@@ -25,7 +25,7 @@ CryptoX एक फ़ाइल एन्क्रिप्शन उपयोग
 | `keys` | `GenerateKey(size int) ([]byte, error)` | `crypto/rand` से 16, 24 या 32 बाइट की AES कुंजी बनाता है। |
 | `stream` | `EncryptLargeFiles(infile, outfile string, key []byte) error` | AES-GCM से फ़ाइल को पुराने v1 प्रारूप में एन्क्रिप्ट करता है। |
 | `stream` | `DecryptLargeFiles(infile, outfile string, key []byte) error` | प्रत्येक खंड की जाँच करके पुनः प्राप्त फ़ाइल लिखता है; फ़ाइल की पूर्णता सत्यापित नहीं कर सकता। |
-| `stream` | `ValidateEncryptedFile(filename string) error` | केवल हेडर जाँचता है। सिफ़रटेक्स्ट या टैग सत्यापित **नहीं** करता। |
+| `stream` | `ValidateHeader(filename string) error` | केवल हेडर जाँचता है। सिफ़रटेक्स्ट या टैग सत्यापित **नहीं** करता। `ValidateEncryptedFile` एक हटाया गया (deprecated) उपनाम है। |
 | `utils` | वही चार पुराने फ़ंक्शन | पुरानी संगतता के लिए पदावनत फ़साड, जो `keys` और `stream` को कॉल करता है। |
 
 सार्वजनिक API अभी फ़ाइल पथ लेते हैं। सार्वजनिक `io.Reader`/`io.Writer` API, प्रमाणित स्ट्रीम समापन, HKDF, एनवेलप, सुरक्षित स्टोरेज, पहचान, रैचेट, रीप्ले सुरक्षा, मोबाइल बाइंडिंग और पोस्ट-क्वांटम समर्थन **अभी लागू नहीं हैं**।
@@ -107,7 +107,7 @@ func run() error {
         return err
     }
     // This checks the header only, not ciphertext integrity.
-    if err := stream.ValidateEncryptedFile(encrypted); err != nil {
+    if err := stream.ValidateHeader(encrypted); err != nil {
         return err
     }
     if err := stream.DecryptLargeFiles(encrypted, restored, key); err != nil {

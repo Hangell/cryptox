@@ -17,8 +17,13 @@ func DecryptLargeFiles(infile, outfile string, key []byte) error {
 	return stream.DecryptLargeFiles(infile, outfile, key)
 }
 
+// ValidateHeader checks the header only, not integrity.
+func ValidateHeader(filename string) error { return stream.ValidateHeader(filename) }
+
 // ValidateEncryptedFile checks the header only, not integrity.
-func ValidateEncryptedFile(filename string) error { return stream.ValidateEncryptedFile(filename) }
+//
+// Deprecated: use ValidateHeader.
+func ValidateEncryptedFile(filename string) error { return stream.ValidateHeader(filename) }
 
 // GenerateKey delegates to keys.GenerateKey.
 func GenerateKey(size int) ([]byte, error) { return keys.GenerateKey(size) }

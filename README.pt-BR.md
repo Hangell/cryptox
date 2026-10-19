@@ -25,7 +25,7 @@ Hoje, o CryptoX serve para avaliar a arquitetura, estudar o formato existente e 
 | `keys` | `GenerateKey(size int) ([]byte, error)` | Gera chaves AES de 16, 24 ou 32 bytes com `crypto/rand`. |
 | `stream` | `EncryptLargeFiles(infile, outfile string, key []byte) error` | Cifra um arquivo com AES-GCM no formato legado v1. |
 | `stream` | `DecryptLargeFiles(infile, outfile string, key []byte) error` | Verifica cada chunk e grava o arquivo recuperado; não verifica sua completude. |
-| `stream` | `ValidateEncryptedFile(filename string) error` | Verifica somente o cabeçalho. **Não** verifica ciphertext nem tags. |
+| `stream` | `ValidateHeader(filename string) error` | Verifica somente o cabeçalho. **Não** verifica ciphertext nem tags. `ValidateEncryptedFile` é um alias deprecado. |
 | `utils` | As mesmas quatro funções legadas | Fachada obsoleta de compatibilidade que delega a `keys` e `stream`. |
 
 As APIs públicas recebem caminhos de arquivos. APIs públicas `io.Reader`/`io.Writer`, término autenticado, HKDF, envelopes, armazenamento seguro, identidades, ratchets, proteção contra replay, bindings mobile e suporte pós-quântico **não estão implementados**.
@@ -107,7 +107,7 @@ func run() error {
         return err
     }
     // This checks the header only, not ciphertext integrity.
-    if err := stream.ValidateEncryptedFile(encrypted); err != nil {
+    if err := stream.ValidateHeader(encrypted); err != nil {
         return err
     }
     if err := stream.DecryptLargeFiles(encrypted, restored, key); err != nil {
