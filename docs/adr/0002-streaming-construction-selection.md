@@ -211,17 +211,22 @@ CryptoX-specific-`info` compatibility decision.
 ### Freeze decision (P0.06)
 
 The v2 wire format is **pinned** — not frozen — at the state examined by the
-internal (automated-agent) design review (commit `5dca04f`). Freezing is
-reserved for #72, made only after the independent specialist review (#71). The
-wire format has not changed since `5dca04f`; the current implementation state
-is `41e38d2`. The corrections applied while resolving the internal review's
-findings do not change the wire format:
+internal (automated-agent) design review (commit `5dca04f`). The owner closed
+#71 by waiver without an independent specialist review. At the owner's request,
+#72 records a **no-freeze** decision; it does not approve parameters or the
+format for production. The wire format has not changed since `5dca04f`; the
+current implementation state is `d1b69ce798c181232c97f269adcdf672f5169b31`.
+The corrections applied while resolving the internal review's findings do not
+change the wire format:
 
 - The `Encryptor` bug fix makes the public streaming API emit exactly the
   format already produced by `encryptV2WithSecrets` (no 0-byte final segment
   for exact-multiple-of-64 KiB streams).
 - The documentation corrections remove the inaccurate Tink wire-compatibility
   and `x/crypto/hkdf` dependency claims.
+- PR #94 propagates non-EOF lookahead errors and caps v2 caller AAD at 64 KiB;
+  both are implementation/API behavior changes that preserve the serialized
+  wire layout. The AAD cap is operational, not a cryptographic usage bound.
 
 No freeze is in effect; any change to the algorithm, nonce, derivation,
 serialization, or state machine requires a new ADR and a fresh specialist
@@ -245,7 +250,8 @@ Each is resolved as follows, with re-test evidence:
 3. **Unquantified per-key limit (Low)** — addressed by a concrete proposal in
    [`docs/security/key-usage-limits.md`](../security/key-usage-limits.md)
    (≤ 2^32 invocations, ≤ 2^48 plaintext+AAD bytes, ≤ 2^32 forgery attempts
-   per key). The proposal remains **unconfirmed** pending a specialist.
+   per key). The proposal remains **unconfirmed**; no independent specialist
+   reviewed or validated these values.
 4. **HKDF dependency claim (Low)** — resolved in the design review and ADR:
    HKDF-SHA-256 is implemented locally over `crypto/hmac` (RFC 5869-verified),
    with no external dependency.
@@ -255,8 +261,12 @@ administratively closed by owner waiver without a review taking place.
 Consequently this ADR does **not** record a freeze, does **not** declare the
 parameters validated, and does **not** claim production readiness. The v2 wire
 format remains pinned at the internal-review state (`5dca04f`), unchanged in
-the current implementation (`41e38d2`); the per-key budget remains a proposal;
-and the HS20 multi-user/multi-key bound remains an open item.
+the current implementation (`d1b69ce798c181232c97f269adcdf672f5169b31`); the
+per-key budget remains unvalidated; and the HS20 multi-user/multi-key bound
+remains an open item. The #72 tracking decision is **no-go for freeze**. Closing
+that tracking card does not close these technical blockers; any future freeze
+requires a fresh review of the exact implementation commit and validated
+parameters.
 
 ---
 
@@ -310,7 +320,8 @@ and the HS20 multi-user/multi-key bound remains an open item.
   promoted to v2 guarantees.
 - The v2 wire format is pinned (not frozen) at the internal-review state
   (`5dca04f`); the P0.06 corrections do not change the wire format, and the
-  current implementation state is `41e38d2`. Freezing awaits #72 after the
-  independent specialist review (#71). The concrete HS20 multi-key bounds and
-  the optional ChaCha20-Poly1305 suite remain open items that must be resolved
-  before any freeze or production-readiness claim.
+  current implementation state is
+  `d1b69ce798c181232c97f269adcdf672f5169b31`. The P0.06 outcome is no-go for
+  freeze: the concrete HS20 multi-key bounds remain unvalidated, and the
+  optional ChaCha20-Poly1305 suite remains outside this pinned format. These
+  items must be resolved before any freeze or production-readiness claim.

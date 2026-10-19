@@ -40,15 +40,45 @@ O principal bloqueio agora não é implementação básica.
 
 ---
 
+## Current progress
+
+> Reconciliado em 2026-10-19 com os cards do kanban (#2–#141) e o commit
+> `d1b69ce`. A Fase 0 permanece **aberta**: o fechamento administrativo de
+> #71/#72 pelo proprietário encerra o tracking, mas **não** substitui o parecer
+> criptográfico independente.
+
+| Entrada da Fase 0 | Cards | Implementado | Revisado (interno) | Auditado (independente) |
+| --- | --- | --- | --- | --- |
+| Inventário e análise do legado v1 | #17, #70 | ✅ | ✅ | — |
+| Estrutura de pacotes alvo | #16 | ✅ | ✅ | — |
+| Garantias e não-garantias | #14 | ✅ | ✅ | — |
+| ADR de seleção do streaming v2 | #2 | ✅ | ✅ | — |
+| Design v2 (nonce/HKDF/segmentação) | #3, #50 | ✅ | ✅ | — |
+| Limites de uso por chave | #31 | ✅ | ⚠️ proposta não validada | ❌ |
+| Revisão independente dos parâmetros | #71 | — | ⚠️ apenas agente | ❌ waiver — não realizada |
+| Aprovação/freeze do formato v2 | #72 | ✅ (pin, sem freeze) | — | ❌ decisão no-go |
+
+**Blockers:** o único blocker técnico restante da Fase 0 é a **revisão
+criptográfica independente** (#71), que não foi realizada. #72 registra a
+decisão **no-go para freeze** e #31 mantém o orçamento por chave como
+**proposta não validada**; o fechamento desses cards não fecha os limites
+técnicos.
+
+**Dependências:** #4 depende de #3 (concluído) e coordena #70 e #72
+(concluídos administrativamente). Nenhum card novo deve ser criado em duplicata
+para os itens acima.
+
+---
+
 # Visão das fases
 
 | Fase | Objetivo | Estado atualizado | Target |
 |---|---|---|---|
-| 0 | Security Audit & Architecture Baseline | 🟢 Concluída | v0.1.0 |
+| 0 | Security Audit & Architecture Baseline | 🟡 Aberta — parecer independente pendente | v0.1.0 |
 | 1 | Cryptographic Foundation | 🟢 Concluída | v0.2.0 |
 | 2 | Secure Streaming & Envelope | 🟢 Concluída | v0.3.0 |
 | 3 | Key Management & Secure Storage | 🟢 Concluída | v0.4.0 |
-| 4 | Identity & Device Security | ⚪ Não iniciada | v0.5.0 |
+| 4 | Identity & Device Security | 🟢 Implementada (experimental) | v0.5.0 |
 | 5 | E2EE Protocol Integration | ⚪ Não iniciada | v0.6.0 |
 | 6 | Cross-Platform Integration | 🟡 Parcialmente antecipada | v0.7.0 |
 | 7 | Security Hardening & External Review | 🟡 Infraestrutura antecipada | v0.9.0 |
@@ -86,12 +116,21 @@ O principal bloqueio agora não é implementação básica.
 
 ## Restante
 
-- [ ] Obter **revisão criptográfica independente** dos parâmetros v2.
-- [ ] Validar concretamente os limites multi-user/multi-key do STREAM/HS20.
-- [ ] Confirmar formalmente o `domainSep`.
-- [ ] Confirmar limites de uso por chave.
-- [ ] Aprovar definitivamente o formato binário v2.
-- [ ] Mudar ADR 0002 de proposta/revisão interna para decisão aprovada.
+> Atualizado em 2026-10-19 após o fechamento administrativo de #71/#72. Os itens
+> abaixo seguem **tecnicamente abertos**; o tracking foi encerrado, mas nenhum
+> deles foi concluído por parecer independente.
+
+- [ ] Obter **revisão criptográfica independente** dos parâmetros v2
+      — #71 fechado por waiver do proprietário; o parecer **não foi realizado**.
+- [ ] Validar concretamente os limites multi-user/multi-key do STREAM/HS20
+      — proposta em `docs/security/key-usage-limits.md`, **não validada**.
+- [ ] Confirmar formalmente o `domainSep` — registrado no design review,
+      **não auditado**.
+- [ ] Confirmar limites de uso por chave — **proposta**, não confirmada.
+- [ ] Aprovar definitivamente o formato binário v2 — #72 registra decisão
+      **no-go para freeze**.
+- [ ] Mudar ADR 0002 de proposta/revisão interna para decisão aprovada —
+      ADR mantém status "Accepted, no freeze".
 
 ## Gate de saída
 
