@@ -154,8 +154,8 @@ Esta fase avançou muito além do status antigo do roadmap.
 ## Restante
 
 - [ ] Fechar revisão independente do AEAD + derivação usados pelo v2.
-- [ ] Decidir se ChaCha20-Poly1305 entra nesta fase ou fica explicitamente para futura suite.
-- [ ] Definir política final de erros públicos compartilhados entre os módulos.
+- [x] Decidir se ChaCha20-Poly1305 entra nesta fase ou fica explicitamente para futura suite. — **Deferido** (ADR 0003): fica para suite futura, com ADR/identificadores/revisão próprios.
+- [x] Definir política final de erros públicos compartilhados entre os módulos. — Sentinels exportados por módulo (aead/keys/envelope/stream), sem pacote global; ver docs/security/public-api-contracts.md.
 - [ ] Congelar os contratos públicos que entrarão no primeiro release.
 
 ## Gate
