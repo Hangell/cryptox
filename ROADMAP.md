@@ -44,10 +44,10 @@ O principal bloqueio agora não é implementação básica.
 
 | Fase | Objetivo | Estado atualizado | Target |
 |---|---|---|---|
-| 0 | Security Audit & Architecture Baseline | 🟡 Security Review | v0.1.0 |
-| 1 | Cryptographic Foundation | 🟢 Quase concluída | v0.2.0 |
-| 2 | Secure Streaming & Envelope | 🟡 Em andamento | v0.3.0 |
-| 3 | Key Management & Secure Storage | ⚪ Próxima grande fase | v0.4.0 |
+| 0 | Security Audit & Architecture Baseline | 🟢 Concluída | v0.1.0 |
+| 1 | Cryptographic Foundation | 🟢 Concluída | v0.2.0 |
+| 2 | Secure Streaming & Envelope | 🟢 Concluída | v0.3.0 |
+| 3 | Key Management & Secure Storage | 🟢 Concluída | v0.4.0 |
 | 4 | Identity & Device Security | ⚪ Não iniciada | v0.5.0 |
 | 5 | E2EE Protocol Integration | ⚪ Não iniciada | v0.6.0 |
 | 6 | Cross-Platform Integration | 🟡 Parcialmente antecipada | v0.7.0 |
@@ -263,9 +263,7 @@ Esse é um gate importantíssimo se o CryptoX quiser um dia se tornar protocolo.
 # Fase 3 — Key Management & Secure Storage
 
 **Target:** `v0.4.0`
-**Estado:** **Próxima grande fase**
-
-Depois do envelope, essa seria minha próxima prioridade.
+**Estado:** **Concluída** (gate fechado em docs/security/keymgmt-securestorage-gate-v040.md)
 
 Criar:
 
