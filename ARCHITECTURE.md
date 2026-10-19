@@ -265,21 +265,22 @@ The actual package layout may evolve when supported by technical justification a
 
 ### 4.1 Current implementation status
 
-As of Phase 1 start (2026-10-18), the repository contains four Go packages:
+As of Phase 3 start (2026-10-19), the repository contains these Go packages:
 
-- `keys` — key generation and HKDF-SHA-256 purpose-separated derivation. The
-  target subpackages (`derivation`, `exchange`, `signatures`, `lifecycle`) do
-  not exist yet and will be introduced incrementally in Phase 1 and later.
-- `stream` — the legacy v1 file encryption/decryption and its reader-based
-  parser. The target `framing` and `integrity` subpackages belong to the future
-  v2 format (see the [replacement evaluation gate](#147-replacement-format-evaluation-gate)).
-- `aead` — Phase 1 AES-256-GCM authenticated encryption with associated data,
-  wrapping the Go standard library with a misuse-resistant API.
-- `envelope` — Phase 2 Envelope v1 container (see
+- `keys` — key generation and HKDF-SHA-256 purpose-separated derivation, plus
+  the `keys/lifecycle` sub-package implementing the one-way key lifecycle state
+  machine from ADR 0005. Remaining target subpackages (`derivation`,
+  `exchange`, `signatures`) will be introduced incrementally in later phases.
+- `stream` — the v2 authenticated streaming format (`CXS2`), its file adapters,
+  and the deprecated legacy v1 reader (`SYM1`) retained only for explicit
+  migration (ADR 0004).
+- `aead` — AES-256-GCM authenticated encryption with associated data, wrapping
+  the Go standard library with a misuse-resistant API.
+- `envelope` — Envelope v1 container (see
   [docs/spec/envelope-v1.md](docs/spec/envelope-v1.md)).
 - `utils` — a deprecated compatibility facade over `keys` and `stream`. It is
-  not part of the target tree and will be removed or replaced with documented
-  impact (see [ADR 0001](docs/adr/0001-legacy-validation.md)).
+  not part of the target tree and will be removed before the stable API
+  (see ADR 0004).
 
 The remaining target directories do not exist yet. They must be introduced only
 with a clear contract, implementation, and tests — never as empty placeholders.
