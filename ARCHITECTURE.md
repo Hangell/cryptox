@@ -437,6 +437,22 @@ The complete stream must have authenticated ordering and termination semantics.
 
 No streaming format should be considered production-ready without adversarial testing and independent security review.
 
+### 7.4 File publication contract
+
+File adapters publish output through a common contract:
+
+- Output is written to a unique temporary file in the destination directory.
+- On success the temporary file is synced, closed, and atomically renamed over
+  the destination, replacing any existing file. Overwrite is part of the
+  contract, not an opt-in.
+- On any error the temporary file is removed and an existing destination is
+  left untouched.
+- The destination directory is not fsynced, so power-loss durability is not
+  guaranteed. Rename atomicity and crash behavior vary by OS and filesystem.
+- A process crash can leave temporary files. Callers using a trusted directory
+  may remove stale `.cryptox-*` files; no automatic recovery is promised.
+- The v2 file adapter must inherit this contract or a stronger one.
+
 ---
 
 ## 8. Key Management Architecture
