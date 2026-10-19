@@ -10,13 +10,13 @@ import (
 // currentPackages is the set of Go packages that must exist in this increment,
 // documented in ARCHITECTURE.md §4.1. A new package must be added here together
 // with its contract, implementation, and tests — never as an empty placeholder.
-var currentPackages = []string{"keys", "stream", "utils", "aead"}
+var currentPackages = []string{"keys", "stream", "utils", "aead", "envelope"}
 
 // targetPackageDirs are directories from the target structure (§4) that are
 // intended to become Go packages. They may be absent (expected during Phase 0),
 // but when present they must contain Go source files.
 var targetPackageDirs = []string{
-	"envelope", "identity", "securestorage", "e2ee", "pki", "compat", "internal",
+	"identity", "securestorage", "e2ee", "pki", "compat", "internal",
 }
 
 // nonPackageDirs are top-level directories that legitimately contain Go files
