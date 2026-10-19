@@ -26,12 +26,12 @@ Today, CryptoX is useful for evaluating the architecture, studying the existing 
 | `keys` | `DeriveKey(root []byte, purpose Purpose, length int) ([]byte, error)` | HKDF-SHA-256 derivation with mandatory purpose-based domain separation. |
 | `aead` | `Seal` / `Open`, `GenerateKey`, `NewKey` | AES-256-GCM authenticated encryption; fresh nonce per `Seal`; `ErrAuthentication` with no plaintext on failure. |
 | `stream` | `EncryptLargeFiles` / `DecryptLargeFiles` | Legacy v1 file format: per-chunk authentication only, no whole-file integrity. |
-| `stream` | `NewEncryptor` / `NewDecryptor`, `EncryptFileV2` / `DecryptFileV2` | v2 stream format with authenticated termination; rejects truncation, reordering, and duplication. |
+| `stream` | `NewEncryptor` / `NewDecryptor`, `EncryptFileV2` / `DecryptFileV2` | v2 stream format with authenticated termination; rejects truncation, reordering, and duplication (see `docs/spec/stream-v2.md`). |
 | `stream` | `ValidateHeader(filename string) error` | Checks the header only. It does **not** verify ciphertext or tags. `ValidateEncryptedFile` is a deprecated alias. |
 | `envelope` | `Seal` / `Open` | Envelope v1 versioned encrypted-object container (see `docs/spec/envelope-v1.md`). |
 | `utils` | The same legacy functions | Deprecated compatibility facade delegating to `keys` and `stream`. |
 
-The public APIs now cover AEAD, HKDF derivation, the v2 streaming format (via `io.Reader`/`io.Writer` and file adapters), and Envelope v1. The v2 stream format and Envelope v1 are specified and tested, but their parameters await independent cryptographic review and a format freeze, so treat them as experimental. Still **not implemented**: secure storage, identities, E2EE session/ratchet adapters, replay protection, mobile bindings, and post-quantum support.
+The public APIs now cover AEAD, HKDF derivation, the v2 streaming format (via `io.Reader`/`io.Writer` and file adapters), and Envelope v1. The v2 stream format is frozen and independently reviewed (ADR 0002, `docs/security/v2-independent-review.md`); Envelope v1 is specified and tested but not yet independently reviewed. Still **not implemented**: secure storage, identities, E2EE session/ratchet adapters, replay protection, mobile bindings, and post-quantum support.
 
 The source declares Go 1.26 as its minimum compatibility level. Use a maintained Go toolchain for development and deployment; minimum source compatibility is not a security recommendation. The library core does not require CGO, but `go test -race` requires a supported platform and C toolchain.
 
