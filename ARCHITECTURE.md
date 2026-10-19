@@ -269,8 +269,10 @@ As of Phase 3 start (2026-10-19), the repository contains these Go packages:
 
 - `keys` — key generation and HKDF-SHA-256 purpose-separated derivation, plus
   the `keys/lifecycle` sub-package implementing the one-way key lifecycle state
-  machine from ADR 0005. Remaining target subpackages (`derivation`,
-  `exchange`, `signatures`) will be introduced incrementally in later phases.
+  machine from ADR 0005 and the `keys/signatures` sub-package providing
+  Ed25519/Ed25519ctx signing with explicit domain-separation contexts (RFC 8032).
+  Remaining target subpackages (`derivation`, `exchange`) will be introduced
+  incrementally in later phases.
 - `stream` — the v2 authenticated streaming format (`CXS2`), its file adapters,
   and the deprecated legacy v1 reader (`SYM1`) retained only for explicit
   migration (ADR 0004).
