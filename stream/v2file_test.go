@@ -2,6 +2,7 @@ package stream
 
 import (
 	"bytes"
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
@@ -135,10 +136,10 @@ func TestV2FileRejectsShortKey(t *testing.T) {
 	if err := os.WriteFile(input, []byte("x"), 0600); err != nil {
 		t.Fatal(err)
 	}
-	if err := EncryptFileV2(input, output, make([]byte, 16), nil); err == nil {
-		t.Fatal("EncryptFileV2 accepted a 16-byte key")
+	if err := EncryptFileV2(input, output, make([]byte, 16), nil); !errors.Is(err, ErrInvalidKey) {
+		t.Fatalf("EncryptFileV2 short key: got %v, want ErrInvalidKey", err)
 	}
-	if err := DecryptFileV2(input, output, make([]byte, 16), nil); err == nil {
-		t.Fatal("DecryptFileV2 accepted a 16-byte key")
+	if err := DecryptFileV2(input, output, make([]byte, 16), nil); !errors.Is(err, ErrInvalidKey) {
+		t.Fatalf("DecryptFileV2 short key: got %v, want ErrInvalidKey", err)
 	}
 }
