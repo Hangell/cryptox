@@ -106,7 +106,7 @@ Até lá, o código pode evoluir experimentalmente, mas o formato não deve ser 
 # Fase 1 — Cryptographic Foundation
 
 **Target:** `v0.2.0`
-**Estado:** **Quase concluída**
+**Estado:** **Concluída** (gate fechado em docs/security/foundation-gate-v020.md)
 
 Esta fase avançou muito além do status antigo do roadmap.
 
@@ -153,14 +153,16 @@ Esta fase avançou muito além do status antigo do roadmap.
 
 ## Restante
 
-- [ ] Fechar revisão independente do AEAD + derivação usados pelo v2.
+- [x] Fechar revisão independente do AEAD + derivação usados pelo v2. — P1.25 (Wycheproof/RFC 5869) + gate em docs/security/foundation-gate-v020.md.
 - [x] Decidir se ChaCha20-Poly1305 entra nesta fase ou fica explicitamente para futura suite. — **Deferido** (ADR 0003): fica para suite futura, com ADR/identificadores/revisão próprios.
 - [x] Definir política final de erros públicos compartilhados entre os módulos. — Sentinels exportados por módulo (aead/keys/envelope/stream), sem pacote global; ver docs/security/public-api-contracts.md.
-- [ ] Congelar os contratos públicos que entrarão no primeiro release.
+- [x] Congelar os contratos públicos que entrarão no primeiro release. — docs/security/public-api-contracts.md + docs/versioning.md; gate em docs/security/foundation-gate-v020.md.
 
 ## Gate
 
 > Fundação criptográfica revisada, testada e suficientemente estável para receber módulos superiores.
+>
+> **Status: gate fechado** (ver docs/security/foundation-gate-v020.md).
 
 ---
 
