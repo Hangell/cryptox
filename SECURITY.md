@@ -54,7 +54,8 @@ legacy ciphertext.
   collisions; use a fresh key per file. The API does not enforce this policy.
 - Counter exhaustion is checked within each file, but this does not prevent
   collisions between files encrypted under the same key.
-- `ValidateEncryptedFile` checks the header only, not ciphertext integrity.
+- `ValidateHeader` checks the header only, not ciphertext integrity (the
+  `ValidateEncryptedFile` name is a deprecated alias).
 - Temporary plaintext files use Unix mode `0600`. Windows requires appropriate
   directory ACLs. Use a trusted destination directory; process crashes may leave
   temporary files. Cleanup is attempted on returned errors.

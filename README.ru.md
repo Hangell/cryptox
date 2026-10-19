@@ -25,7 +25,7 @@ CryptoX развивается из утилиты шифрования файл
 | `keys` | `GenerateKey(size int) ([]byte, error)` | Генерирует ключи AES длиной 16, 24 или 32 байта через `crypto/rand`. |
 | `stream` | `EncryptLargeFiles(infile, outfile string, key []byte) error` | Шифрует файл с помощью AES-GCM в устаревший формат v1. |
 | `stream` | `DecryptLargeFiles(infile, outfile string, key []byte) error` | Проверяет каждый блок и записывает восстановленный файл; не проверяет его полноту. |
-| `stream` | `ValidateEncryptedFile(filename string) error` | Проверяет только заголовок. **Не** проверяет шифротекст и теги. |
+| `stream` | `ValidateHeader(filename string) error` | Проверяет только заголовок. **Не** проверяет шифротекст и теги. `ValidateEncryptedFile` — устаревший псевдоним. |
 | `utils` | Те же четыре устаревшие функции | Устаревший фасад совместимости, делегирующий вызовы `keys` и `stream`. |
 
 Публичные API пока принимают пути к файлам. Публичные API `io.Reader`/`io.Writer`, аутентифицированное завершение потока, HKDF, конверты, защищённое хранилище, идентификация, ratchet-механизмы, защита от повторного воспроизведения, мобильные привязки и постквантовая поддержка **не реализованы**.
@@ -107,7 +107,7 @@ func run() error {
         return err
     }
     // This checks the header only, not ciphertext integrity.
-    if err := stream.ValidateEncryptedFile(encrypted); err != nil {
+    if err := stream.ValidateHeader(encrypted); err != nil {
         return err
     }
     if err := stream.DecryptLargeFiles(encrypted, restored, key); err != nil {

@@ -168,8 +168,9 @@ func DecryptLargeFiles(infile, outfile string, key []byte) (err error) {
 	return os.Rename(tmp, outfile)
 }
 
-// ValidateEncryptedFile checks only the v1 header; it does not verify integrity.
-func ValidateEncryptedFile(filename string) error {
+// ValidateHeader checks only the v1 header (magic, version, algorithm, and
+// reserved nonce bytes); it does not verify ciphertext integrity.
+func ValidateHeader(filename string) error {
 	file, err := os.Open(filename)
 	if err != nil {
 		return fmt.Errorf("failed to open file: %w", err)
@@ -205,6 +206,15 @@ func ValidateEncryptedFile(filename string) error {
 		return errors.New("invalid reserved nonce bytes")
 	}
 	return nil
+}
+
+// ValidateEncryptedFile checks only the v1 header; it does not verify
+// integrity.
+//
+// Deprecated: use ValidateHeader. The original name suggested whole-file
+// validation, which this function never performed.
+func ValidateEncryptedFile(filename string) error {
+	return ValidateHeader(filename)
 }
 
 func checkCounter(counter uint64) error {

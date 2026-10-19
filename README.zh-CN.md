@@ -25,7 +25,7 @@ CryptoX 正从文件加密工具演进为通用密码学工具库。项目旨在
 | `keys` | `GenerateKey(size int) ([]byte, error)` | 使用 `crypto/rand` 生成 16、24 或 32 字节的 AES 密钥。 |
 | `stream` | `EncryptLargeFiles(infile, outfile string, key []byte) error` | 使用 AES-GCM 将文件加密为旧版 v1 格式。 |
 | `stream` | `DecryptLargeFiles(infile, outfile string, key []byte) error` | 验证每个数据块并写入恢复文件；无法验证文件是否完整。 |
-| `stream` | `ValidateEncryptedFile(filename string) error` | 仅检查文件头，**不**验证密文或认证标签。 |
+| `stream` | `ValidateHeader(filename string) error` | 仅检查文件头，**不**验证密文或认证标签。`ValidateEncryptedFile` 是已弃用的别名。 |
 | `utils` | 相同的四个旧版函数 | 已弃用的兼容外观层，委托给 `keys` 和 `stream`。 |
 
 当前公开 API 接收文件路径。公开的 `io.Reader`/`io.Writer` API、流结束认证、HKDF、加密封装、安全存储、身份、棘轮、重放保护、移动端绑定和后量子支持均**尚未实现**。
@@ -107,7 +107,7 @@ func run() error {
         return err
     }
     // This checks the header only, not ciphertext integrity.
-    if err := stream.ValidateEncryptedFile(encrypted); err != nil {
+    if err := stream.ValidateHeader(encrypted); err != nil {
         return err
     }
     if err := stream.DecryptLargeFiles(encrypted, restored, key); err != nil {
