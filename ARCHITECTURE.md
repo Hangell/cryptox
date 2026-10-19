@@ -265,7 +265,7 @@ The actual package layout may evolve when supported by technical justification a
 
 ### 4.1 Current implementation status
 
-As of Phase 0 (2026-10-18), the repository contains three Go packages:
+As of Phase 1 start (2026-10-18), the repository contains four Go packages:
 
 - `keys` — key generation. The target subpackages (`derivation`, `exchange`,
   `signatures`, `lifecycle`) do not exist yet and will be introduced
@@ -273,6 +273,8 @@ As of Phase 0 (2026-10-18), the repository contains three Go packages:
 - `stream` — the legacy v1 file encryption/decryption and its reader-based
   parser. The target `framing` and `integrity` subpackages belong to the future
   v2 format (see the [replacement evaluation gate](#147-replacement-format-evaluation-gate)).
+- `aead` — Phase 1 AES-256-GCM authenticated encryption with associated data,
+  wrapping the Go standard library with a misuse-resistant API.
 - `utils` — a deprecated compatibility facade over `keys` and `stream`. It is
   not part of the target tree and will be removed or replaced with documented
   impact (see [ADR 0001](docs/adr/0001-legacy-validation.md)).
@@ -281,7 +283,7 @@ The remaining target directories do not exist yet. They must be introduced only
 with a clear contract, implementation, and tests — never as empty placeholders.
 This invariant is enforced by `structure_test.go`.
 
-### 4.2 Component disposition (Phase 0)
+### 4.2 Component disposition
 
 Every current component has an explicit disposition. The legacy v1 format is
 never promoted to new security guarantees.
@@ -289,6 +291,7 @@ never promoted to new security guarantees.
 | Component | Disposition | Rationale and next step |
 | --- | --- | --- |
 | `keys` | Reuse | `GenerateKey` draws from `crypto/rand` with size validation. Refactor into the target `keys/` subpackages (`generation`, `derivation`, `lifecycle`) in Phase 1. |
+| `aead` | Reuse | New Phase 1 package wrapping the Go standard library AES-256-GCM with a misuse-resistant API; no custom cipher construction. |
 | `stream` (v1 format) | Replace | Lacks whole-file integrity and authenticated termination (CX-V1-001/003/004). Superseded by the v2 format selected in ADR 0002; v1 is never reinterpreted as v2. The reader parser may be adapted only as an isolated legacy reader with explicit no-migration documentation. |
 | `utils` | Remove | Deprecated facade that delegates to `keys` and `stream`. Remove with documented impact after the Phase 1/2 replacements; do not extend its API. |
 
