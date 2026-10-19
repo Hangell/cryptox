@@ -74,7 +74,9 @@ func (e *Encryptor) Write(p []byte) (int, error) {
 	}
 
 	e.buf = append(e.buf, p...)
-	for len(e.buf) >= v2SegmentSize {
+	// Emit only segments that are definitely followed by more data: keep at
+	// least one full segment buffered so Close can mark the true final segment.
+	for len(e.buf) >= 2*v2SegmentSize {
 		if err := e.emit(e.buf[:v2SegmentSize], false); err != nil {
 			e.err = err
 			return 0, err
@@ -97,6 +99,17 @@ func (e *Encryptor) Close() error {
 	}
 	e.closed = true
 
+	// Flush full segments that are still followed by buffered data, then emit
+	// the remaining buffer (<= v2SegmentSize) as the final segment. An empty
+	// buffer yields the single empty final segment of an empty stream.
+	for len(e.buf) > v2SegmentSize {
+		if err := e.emit(e.buf[:v2SegmentSize], false); err != nil {
+			e.err = err
+			return err
+		}
+		e.buf = e.buf[v2SegmentSize:]
+		e.counter++
+	}
 	if err := e.emit(e.buf, true); err != nil {
 		e.err = err
 		return err

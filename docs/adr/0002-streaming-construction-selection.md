@@ -36,9 +36,12 @@ Recommend the **STREAM construction (HRRV15)** — nonce-based online
 authenticated encryption with nonce-reuse misuse resistance — instantiated the
 way [Tink's AES-GCM-HKDF streaming format](https://developers.google.com/tink/streaming-aead/aes_gcm_hkdf_streaming)
 instantiates it, as the primary candidate for the CryptoX v2 streaming format,
-implemented in **pure Go** (standard library `crypto/aes`, `crypto/cipher`, plus
-`golang.org/x/crypto/hkdf`) and designed to match Tink's wire format so that
-independent implementations can serve as interoperability vectors.
+implemented in **pure Go** (standard library `crypto/aes`, `crypto/cipher`,
+plus a locally implemented RFC 5869 HKDF-SHA-256 over `crypto/hmac`). The IV
+and final-flag layout mirrors Tink, while the HKDF `info` and file header are
+CryptoX-specific, so the format is not wire-compatible with Tink; independent
+implementations can still serve as reference implementations for the
+construction.
 
 Supporting decisions:
 
@@ -71,7 +74,9 @@ Supporting decisions:
   ciphertext that ends on a non-final segment is rejected as truncated.
 - Associated data binds the whole stream through the HKDF `info` input, not
   per-segment AAD (per-segment AAD is empty in Tink).
-- Pure Go, no CGO. Standard library plus `x/crypto/hkdf`; no adoption of
+- Pure Go, no CGO. Standard library only: AES-GCM via `crypto/aes` +
+  `crypto/cipher`, HKDF-SHA-256 implemented locally over `crypto/hmac`
+  (RFC 5869, verified against official vectors); no adoption of
   tink-go or age as dependencies. (Historical note: this ADR was written while
   `go.mod` declared `go 1.19`; the module now declares `go 1.26`.)
 - Tink documents a fork-safety limitation that must be respected.
@@ -152,8 +157,8 @@ Dependencies and platform constraints (capture date 2026-10-18):
   wrapper for Go; cross-compilation to Windows/macOS/Android/iOS is the caller's
   burden.
 - At the time this ADR was written the repository declared `go 1.19`; it now
-  declares `go 1.26` (2026-10-18). A pure-Go reimplementation using stdlib plus
-  `golang.org/x/crypto/hkdf` adds no dependency and no toolchain bump beyond the
+  declares `go 1.26` (2026-10-18). A pure-Go reimplementation using the
+  standard library only adds no dependency and no toolchain bump beyond the
   declared floor.
 
 ---
@@ -187,24 +192,39 @@ Dependencies and platform constraints (capture date 2026-10-18):
 
 ---
 
-## Recommendation (accepted, pending independent review)
+## Recommendation (accepted)
 
 Recommend **Alternative A**: implement a v2 streaming format that instantiates
 the STREAM construction (HRRV15) as specified for Tink's AES-GCM-HKDF streaming
-(AES-256-GCM), in pure Go using standard library primitives plus
-`golang.org/x/crypto/hkdf`, and treat Tink's Go implementation and the HS20
-analysis as the primary cross-implementation and security references.
+(AES-256-GCM), in pure Go using standard library primitives plus a locally
+implemented RFC 5869 HKDF-SHA-256, and treat Tink's Go implementation and the
+HS20 analysis as the primary cross-implementation and security references.
 
 The open parameters were recorded in
 [`docs/security/v2-streaming-design-review.md`](../security/v2-streaming-design-review.md):
 header layout (`CXS2`), suite `0x01` = AES-256-GCM-HKDF-SHA-256, HKDF domain
 separation, segment/final-flag semantics, mechanical limits (`n <= 2^32`,
 `<= 2^48` bytes/stream), fork-safety, and the CryptoX-specific-header +
-Tink-compatible-segment compatibility decision.
+CryptoX-specific-`info` compatibility decision.
 
-This is a maintainer design review, **not** specialist approval. Independent
-specialist review remains a prerequisite before the format is frozen or shipped
-as production-ready; the residual items are listed in §8 of the design review.
+### Freeze decision (P0.06)
+
+The v2 wire format is **frozen** at the state examined by the independent
+review (commit `5dca04f`). The corrections applied while resolving the review
+findings do not change the wire format:
+
+- The `Encryptor` bug fix makes the public streaming API emit exactly the
+  format already produced by `encryptV2WithSecrets` (no 0-byte final segment
+  for exact-multiple-of-64 KiB streams).
+- The documentation corrections remove the inaccurate Tink wire-compatibility
+  and `x/crypto/hkdf` dependency claims.
+
+The format is frozen for the phase; any change to the algorithm, nonce,
+derivation, serialization, or state machine after this point requires a new
+ADR and a fresh specialist review. The residual items listed in §8 of the
+design review (concrete multi-key bounds and the optional ChaCha20-Poly1305
+suite) remain open and do not block Phase 1, but must be resolved before any
+production-readiness claim.
 
 ---
 
@@ -222,37 +242,41 @@ as production-ready; the residual items are listed in §8 of the design review.
    the v1 migration section below.
 6. Test plan (vectors, Tink cross-check, mutation, property, fuzz) — **retained**
    as the acceptance baseline for issues #21 and #27.
-7. Dependency and toolchain decision (stdlib + `x/crypto`) — **recorded**;
+7. Dependency and toolchain decision (standard library only) — **recorded**;
+   HKDF-SHA-256 is implemented locally over `crypto/hmac` (RFC 5869-verified);
    `go.mod` currently declares `go 1.26`.
 
 ---
 
 ## Resolved questions
 
-- Default suite: **AES-256-GCM-HKDF-SHA-256** (stdlib + `x/crypto/hkdf`).
-  ChaCha20-Poly1305 is reserved as a future optional suite requiring its own
-  review.
-- Compatibility: **CryptoX-specific header with Tink-compatible segment
-  construction**, so v2 is unambiguously distinct from v1 while a Tink
-  implementation can serve as an independent oracle.
+- Default suite: **AES-256-GCM-HKDF-SHA-256** (standard library only; HKDF
+  implemented locally, RFC 5869-verified). ChaCha20-Poly1305 is reserved as a
+  future optional suite requiring its own review.
+- Compatibility: **CryptoX-specific header and HKDF `info`**; the IV and
+  final-flag layout mirrors Tink but the format is not wire-compatible with
+  Tink. v2 is unambiguously distinct from v1.
 - Maximum segment count and byte count: `n <= 2^32`, `<= 2^48` bytes per stream
   at 64 KiB segments (design review §5).
-- Toolchain: reimplementation with stdlib + `x/crypto`; no adoption of tink-go
-  or age as dependencies.
+- Toolchain: reimplementation with the standard library only; no adoption of
+  tink-go or age as dependencies.
 
 ## Remaining open item
 
-- Independent specialist review of the concrete HS20 bounds and the `domainSep`
-  encoding before any production freeze (design review §8).
+- Independent specialist review of the concrete HS20 multi-user / multi-key
+  bounds and the resulting per-key usage limit before any production freeze
+  (design review §8).
 
 ---
 
 ## Consequences
 
-- Establishes a recorded, evidence-backed construction choice without changing
-  code, dependencies, or roadmap phases.
-- Keeps the core CGO-free and transport-independent.
+- Establishes a recorded, evidence-backed construction choice for the v2
+  streaming format.
+- Keeps the core CGO-free, dependency-free, and transport-independent.
 - Preserves the explicit v1 no-migration policy; legacy ciphertext is never
   promoted to v2 guarantees.
-- Defers format freezing and implementation to the specialist review, keeping
-  Phase 0 architecture approval and Phase 1 entry open.
+- The v2 wire format is frozen at the independently reviewed state
+  (`5dca04f`), with the P0.06 corrections applied; the concrete HS20
+  multi-key bounds and the optional ChaCha20-Poly1305 suite remain open items
+  that must be resolved before any production-readiness claim.

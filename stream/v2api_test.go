@@ -49,6 +49,45 @@ func TestEncryptorDecryptorRoundTrip(t *testing.T) {
 	}
 }
 
+func TestEncryptorExactMultipleOfSegmentSize(t *testing.T) {
+	// Regression test for the independent review finding: the public Encryptor
+	// used to emit a 0-byte final segment for streams that are an exact
+	// multiple of the 64 KiB segment size, diverging from the format produced
+	// by encryptV2WithSecrets. Both paths must now yield exactly n segments
+	// (the trailing full segment carrying the final flag), i.e. no extra
+	// empty final record.
+	key := bytes.Repeat([]byte{0x11}, 32)
+	aad := []byte("associated data")
+	for _, n := range []int{1, 2, 3} {
+		pt := bytes.Repeat([]byte{0x22}, n*v2SegmentSize)
+
+		ct := v2Encrypt(t, pt, key, aad)
+		wantLen := v2HeaderLen + n*(v2SegmentSize+v2TagSize)
+		if len(ct) != wantLen {
+			t.Fatalf("Encryptor: %d full segments produced %d bytes, want %d (extra empty final segment)", n, len(ct), wantLen)
+		}
+
+		// Cross-check against the core path with fixed randomizer values.
+		var salt [v2SaltLen]byte
+		var prefix [v2NoncePrefixLen]byte
+		var core bytes.Buffer
+		if err := encryptV2WithSecrets(&core, bytes.NewReader(pt), key, aad, salt, prefix); err != nil {
+			t.Fatal(err)
+		}
+		if len(core.Bytes()) != wantLen {
+			t.Fatalf("encryptV2WithSecrets: %d full segments produced %d bytes, want %d", n, len(core.Bytes()), wantLen)
+		}
+
+		got, err := v2DecryptAll(t, ct, key, aad)
+		if err != nil {
+			t.Fatalf("round trip (n=%d): %v", n, err)
+		}
+		if !bytes.Equal(got, pt) {
+			t.Fatalf("round trip (n=%d): mismatch", n)
+		}
+	}
+}
+
 func TestDecryptorEOFOnlyAfterFinalSegment(t *testing.T) {
 	key := bytes.Repeat([]byte{0x5b}, 32)
 	pt := bytes.Repeat([]byte{0x01}, 3*v2SegmentSize+123)

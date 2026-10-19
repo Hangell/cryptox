@@ -32,9 +32,10 @@ Assumed threat model:
 ## 2. Suite and header
 
 Default suite `0x01` = **AES-256-GCM-HKDF-SHA-256**. AES-GCM comes from the Go
-standard library (`crypto/aes` + `crypto/cipher.NewGCM`); HKDF from
-`golang.org/x/crypto/hkdf`. ChaCha20-Poly1305 is reserved as a future optional
-suite and requires its own review before introduction.
+standard library (`crypto/aes` + `crypto/cipher.NewGCM`); HKDF is the
+standard-library HMAC-SHA-256 construction implemented locally (RFC 5869,
+verified against the published test vectors). ChaCha20-Poly1305 is reserved as
+a future optional suite and requires its own review before introduction.
 
 Header layout (46 bytes, all fixed size):
 
@@ -62,8 +63,11 @@ domainSep   = "cryptox/v2/stream" || 0x00 || version || suite || 0x00 || AAD
 - `version` and `suite` are the single header bytes, included in `info` to
   domain-separate format revisions and suites.
 - `AAD` is the caller-supplied associated data, authenticated via the key
-  derivation (`info`), exactly as Tink binds AAD through the HKDF `info` input.
-  Per-segment AEAD AAD is empty.
+  derivation (`info`). The `info` layout is CryptoX-specific
+  (`domainSep || 0x00 || version || suite || 0x00 || AAD`); it is *not*
+  Tink's `info = AAD` construction, so the derived key and segment ciphertexts
+  are not wire-compatible with Tink even though the IV/final-flag layout
+  mirrors it. Per-segment AEAD AAD is empty.
 - `salt` (256-bit) and `noncePrefix` (56-bit) are fresh per stream, so
   accidental reuse of a caller-supplied raw key across streams derives a
   different per-stream key with overwhelming probability.
@@ -102,11 +106,12 @@ Decryption must reject:
 - Per-stream randomizer: `salt || noncePrefix` = 312 bits. The collision
   probability across `q` streams under one key is approximately `q^2 / 2^313`.
 
-Per-key usage guidance (operational, to be confirmed against HS20 concrete
-bounds by the independent review): keep total bytes per key conservative
-(<= 2^48 bytes) and stream count well below 2^32. The exact concrete multi-user
-bounds remain an item for the independent specialist review; the format exposes
-the mechanical limits above regardless of that review.
+Per-key usage guidance: the format publishes **per-stream** mechanical limits
+only (see above). CryptoX does not currently advertise a validated per-key
+bound; a concrete multi-key/multi-user limit remains an open item from the
+independent review (see §8). Until such a bound is established, operators
+should limit total bytes per key conservatively and treat the per-stream
+`<= 2^48` byte bound as a stream-level, not key-level, guarantee.
 
 ## 6. Fork-safety and process model
 
@@ -121,19 +126,22 @@ CryptoX v2 inherits this property. The process model is:
 
 ## 7. Compatibility decision
 
-The segment construction (derived key, IV layout, final-flag byte) matches
-Tink's AES-GCM-HKDF streaming, while the file header is CryptoX-specific
-(`CXS2`). This keeps v2 unambiguously distinct from v1 (`SYM1`) and lets a
-Tink-based implementation serve as an independent cross-implementation oracle
-for the segment ciphertext once `domainSep` is fixed.
+The IV/final-flag layout mirrors Tink's AES-GCM-HKDF streaming, while the HKDF
+`info` is CryptoX-specific and the file header is CryptoX-specific (`CXS2`), so
+v2 ciphertexts are not wire-compatible with Tink. The header keeps v2
+unambiguously distinct from v1 (`SYM1`); a Tink-based implementation could
+still serve as an independent implementation reference for the segment AEAD
+layout, but byte-for-byte cross-compatibility with Tink is not claimed.
 
 ## 8. Residual items for the independent specialist review
 
-This review records decisions but does not replace the required independent
-audit. The following must be confirmed by a specialist before any production
+The independent review was performed and recorded in
+[`docs/security/v2-independent-review.md`](v2-independent-review.md); its four
+findings are resolved in this document and in the implementation. The following
+items remain open and must be confirmed by a specialist before any production
 freeze:
 
-1. Concrete multi-user / multi-key bounds for the chosen parameters (HS20).
-2. The exact `domainSep` string and its interaction with AAD length encoding.
-3. Per-key and per-stream usage limits to publish.
-4. The ChaCha20-Poly1305 optional suite, if and when introduced.
+1. Concrete multi-user / multi-key bounds for the chosen parameters (HS20), and
+   the resulting **per-key** usage limit to publish (the per-stream limits are
+   mechanical and already documented in §5).
+2. The ChaCha20-Poly1305 optional suite, if and when introduced.
