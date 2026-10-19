@@ -278,6 +278,8 @@ As of Phase 3 start (2026-10-19), the repository contains these Go packages:
   the Go standard library with a misuse-resistant API.
 - `envelope` — Envelope v1 container (see
   [docs/spec/envelope-v1.md](docs/spec/envelope-v1.md)).
+- `securestorage` — backend-independent storage contracts
+  (`securestorage/interfaces`) for the Phase 3 secure-storage layer.
 - `utils` — a deprecated compatibility facade over `keys` and `stream`. It is
   not part of the target tree and will be removed before the stable API
   (see ADR 0004).
@@ -296,6 +298,7 @@ never promoted to new security guarantees.
 | `keys` | Reuse | `GenerateKey` draws from `crypto/rand` with size validation. Refactor into the target `keys/` subpackages (`generation`, `derivation`, `lifecycle`) in Phase 1. |
 | `aead` | Reuse | New Phase 1 package wrapping the Go standard library AES-256-GCM with a misuse-resistant API; no custom cipher construction. |
 | `envelope` | Reuse | New Phase 2 package implementing Envelope v1 over AES-256-GCM; format specified independently in `docs/spec/envelope-v1.md`. |
+| `securestorage` | Reuse | New Phase 3 package defining backend-independent storage contracts (`securestorage/interfaces`) implemented by filesystem, in-memory, and OS adapters. |
 | `stream` (v1 format) | Replace | Lacks whole-file integrity and authenticated termination (CX-V1-001/003/004). Superseded by the v2 format selected in ADR 0002; v1 is never reinterpreted as v2. The reader parser may be adapted only as an isolated legacy reader with explicit no-migration documentation. |
 | `utils` | Remove | Deprecated facade that delegates to `keys` and `stream`. Remove with documented impact after the Phase 1/2 replacements; do not extend its API. |
 
