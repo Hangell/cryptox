@@ -23,12 +23,15 @@ Hoje, o CryptoX serve para avaliar a arquitetura, estudar o formato existente e 
 | Pacote | API disponível | Comportamento |
 | --- | --- | --- |
 | `keys` | `GenerateKey(size int) ([]byte, error)` | Gera chaves AES de 16, 24 ou 32 bytes com `crypto/rand`. |
-| `stream` | `EncryptLargeFiles(infile, outfile string, key []byte) error` | Cifra um arquivo com AES-GCM no formato legado v1. |
-| `stream` | `DecryptLargeFiles(infile, outfile string, key []byte) error` | Verifica cada chunk e grava o arquivo recuperado; não verifica sua completude. |
+| `keys` | `DeriveKey(root []byte, purpose Purpose, length int) ([]byte, error)` | Derivação HKDF-SHA-256 com separação de domínio obrigatória por finalidade. |
+| `aead` | `Seal` / `Open`, `GenerateKey`, `NewKey` | Cifragem autenticada AES-256-GCM; nonce novo por `Seal`; `ErrAuthentication` sem plaintext em falha. |
+| `stream` | `EncryptLargeFiles` / `DecryptLargeFiles` | Formato legado v1: autentica cada chunk, sem integridade do arquivo completo. |
+| `stream` | `NewEncryptor` / `NewDecryptor`, `EncryptFileV2` / `DecryptFileV2` | Formato de stream v2 com término autenticado; rejeita truncamento, reordenação e duplicação. |
 | `stream` | `ValidateHeader(filename string) error` | Verifica somente o cabeçalho. **Não** verifica ciphertext nem tags. `ValidateEncryptedFile` é um alias deprecado. |
-| `utils` | As mesmas quatro funções legadas | Fachada obsoleta de compatibilidade que delega a `keys` e `stream`. |
+| `envelope` | `Seal` / `Open` | Envelope v1, contêiner versionado de objetos cifrados (veja `docs/spec/envelope-v1.md`). |
+| `utils` | As mesmas funções legadas | Fachada obsoleta de compatibilidade que delega a `keys` e `stream`. |
 
-As APIs públicas recebem caminhos de arquivos. APIs públicas `io.Reader`/`io.Writer`, término autenticado, HKDF, envelopes, armazenamento seguro, identidades, ratchets, proteção contra replay, bindings mobile e suporte pós-quântico **não estão implementados**.
+As APIs públicas agora cobrem AEAD, derivação HKDF, o formato de streaming v2 (via `io.Reader`/`io.Writer` e adaptadores de arquivo) e o Envelope v1. O formato v2 e o Envelope v1 estão especificados e testados, mas seus parâmetros aguardam revisão criptográfica independente e congelamento de formato — trate-os como experimentais. Ainda **não estão implementados**: armazenamento seguro, identidades, adaptadores de sessão/ratchet E2EE, proteção contra replay, bindings mobile e suporte pós-quântico.
 
 O código declara Go 1.26 como nível mínimo de compatibilidade. Use uma versão mantida do Go para desenvolver e executar aplicações; compatibilidade mínima de código não é recomendação de segurança. O núcleo não exige CGO, mas `go test -race` exige plataforma compatível e toolchain C.
 
@@ -157,10 +160,10 @@ O projeto segue princípios modulares e hexagonais: consumidores usam pacotes es
 
 | Componente planejado | Responsabilidade |
 | --- | --- |
-| `aead` | Cifragem autenticada e gerenciamento de nonces. |
-| Expansão de `keys` | Derivação, separação por finalidade, ciclo de vida e integração com armazenamento. |
-| Substituição de `stream` | Enquadramento, metadados, ordenação e término autenticados. |
-| `envelope` | Formatos explicitamente versionados para objetos cifrados. |
+| `aead` | ✅ Implementado — cifragem autenticada e gerenciamento de nonces (AES-256-GCM). |
+| Expansão de `keys` | Parcialmente implementada — derivação e separação por finalidade existem; ciclo de vida e integração com armazenamento ficam pendentes. |
+| Substituição de `stream` | ✅ v2 implementado — enquadramento, metadados, ordenação e término autenticados; v1 mantido apenas como leitor legado. |
+| `envelope` | ✅ Implementado — contêiner versionado Envelope v1. |
 | `securestorage` | Estado cifrado e adaptadores opcionais de persistência. |
 | `identity` / `pki` | Identidade de dispositivos, assinaturas, credenciais, certificados e validação de confiança. |
 | `e2ee` | Adaptadores para protocolos estabelecidos de sessões/grupos, escolhidos após revisão. |
@@ -215,7 +218,7 @@ Os três documentos principais de engenharia são:
 - [ARCHITECTURE.md](ARCHITECTURE.md): módulos-alvo, contratos, fronteiras de confiança e modelo de ameaças.
 - [ROADMAP.md](ROADMAP.md): prioridades, dependências, marcos e critérios de release.
 
-[CONTRIBUTING.md](CONTRIBUTING.md) descreve as verificações para contribuir. [THREAT_MODEL.md](THREAT_MODEL.md) aponta para o modelo de ameaças mantido no documento de arquitetura. [SECURITY.md](SECURITY.md) documenta os limites atuais e o procedimento de relato de vulnerabilidades. Use o relato privado do GitHub se estiver disponível; caso contrário, solicite um canal confidencial sem publicar detalhes sensíveis. A política não afirma que o relato privado está habilitado nem estabelece SLA de resposta. Nunca publique segredos ou detalhes sensíveis de exploração.
+[CONTRIBUTING.md](CONTRIBUTING.md) descreve as verificações para contribuir. [THREAT_MODEL.md](THREAT_MODEL.md) aponta para o modelo de ameaças mantido no documento de arquitetura. [SECURITY.md](SECURITY.md) documenta os limites atuais e o procedimento de relato de vulnerabilidades. Use o caminho de security advisory do GitHub (`security/advisories/new`) quando o relato privado estiver habilitado; o canal documentado de fallback é enviar e-mail ao mantenedor em `rodrigo@hangell.org` com assunto `[CryptoX security]`. A política não estabelece SLA de resposta. Nunca publique segredos ou detalhes sensíveis de exploração.
 
 Contribua com mudanças pequenas e revisáveis: examine a implementação, adicione testes de regressão/adversariais antes de correções críticas, execute as verificações e documente premissas de segurança e mudanças de API/formato. Use identificadores e comentários de código em inglês e Conventional Commits explicando o motivo. Mantenha as cinco traduções do README alinhadas quando o comportamento mudar.
 

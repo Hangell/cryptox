@@ -23,12 +23,15 @@ CryptoX 正从文件加密工具演进为通用密码学工具库。项目旨在
 | 包 | 可用 API | 行为 |
 | --- | --- | --- |
 | `keys` | `GenerateKey(size int) ([]byte, error)` | 使用 `crypto/rand` 生成 16、24 或 32 字节的 AES 密钥。 |
-| `stream` | `EncryptLargeFiles(infile, outfile string, key []byte) error` | 使用 AES-GCM 将文件加密为旧版 v1 格式。 |
-| `stream` | `DecryptLargeFiles(infile, outfile string, key []byte) error` | 验证每个数据块并写入恢复文件；无法验证文件是否完整。 |
+| `keys` | `DeriveKey(root []byte, purpose Purpose, length int) ([]byte, error)` | HKDF-SHA-256 密钥派生，强制按用途进行域分离。 |
+| `aead` | `Seal` / `Open`、`GenerateKey`、`NewKey` | AES-256-GCM 认证加密；每次 `Seal` 使用新 nonce；认证失败返回 `ErrAuthentication` 且不泄露明文。 |
+| `stream` | `EncryptLargeFiles` / `DecryptLargeFiles` | 旧版 v1 文件格式：仅认证单个数据块，无全文件完整性。 |
+| `stream` | `NewEncryptor` / `NewDecryptor`、`EncryptFileV2` / `DecryptFileV2` | v2 流格式，带流结束认证；拒绝截断、重排与重复。 |
 | `stream` | `ValidateHeader(filename string) error` | 仅检查文件头，**不**验证密文或认证标签。`ValidateEncryptedFile` 是已弃用的别名。 |
-| `utils` | 相同的四个旧版函数 | 已弃用的兼容外观层，委托给 `keys` 和 `stream`。 |
+| `envelope` | `Seal` / `Open` | Envelope v1 版本化加密对象容器（见 `docs/spec/envelope-v1.md`）。 |
+| `utils` | 相同的旧版函数 | 已弃用的兼容外观层，委托给 `keys` 和 `stream`。 |
 
-当前公开 API 接收文件路径。公开的 `io.Reader`/`io.Writer` API、流结束认证、HKDF、加密封装、安全存储、身份、棘轮、重放保护、移动端绑定和后量子支持均**尚未实现**。
+公开 API 现已覆盖 AEAD、HKDF 派生、v2 流格式（通过 `io.Reader`/`io.Writer` 和文件适配器）以及 Envelope v1。v2 流格式与 Envelope v1 已规范并测试，但其参数仍待独立密码学审查和格式冻结，请将其视为实验性。仍**尚未实现**：安全存储、身份、E2EE 会话/棘轮适配器、重放保护、移动端绑定和后量子支持。
 
 源码声明的最低兼容级别为 Go 1.26。开发和部署请使用仍受维护的 Go 工具链；最低源码兼容性并非安全建议。库核心不需要 CGO，但 `go test -race` 需要受支持的平台及 C 工具链。
 
@@ -157,10 +160,10 @@ Nonce: random prefix (8 bytes) | chunk counter (uint32 LE)
 
 | 计划组件 | 职责 |
 | --- | --- |
-| `aead` | 认证加密与 nonce 管理。 |
-| 扩展 `keys` | 派生、用途隔离、生命周期及存储集成。 |
-| 替换 `stream` | 对分帧、元数据、顺序及流结束进行认证。 |
-| `envelope` | 显式版本化的加密对象格式。 |
+| `aead` | ✅ 已实现 — 认证加密与 nonce 管理（AES-256-GCM）。 |
+| 扩展 `keys` | 部分实现 — 派生与用途隔离已具备；生命周期及存储集成尚待完成。 |
+| 替换 `stream` | ✅ v2 已实现 — 对分帧、元数据、顺序及流结束进行认证；v1 仅保留为旧版读取器。 |
+| `envelope` | ✅ 已实现 — Envelope v1 版本化容器。 |
 | `securestorage` | 加密状态与可选持久化适配器。 |
 | `identity` / `pki` | 设备身份、签名、凭据、证书及信任验证。 |
 | `e2ee` | 经审查选定的成熟会话/群组协议适配器。 |
@@ -215,7 +218,7 @@ go run golang.org/x/vuln/cmd/govulncheck@v1.9.0 ./...
 - [ARCHITECTURE.md](ARCHITECTURE.md)：目标模块、契约、信任边界与威胁模型。
 - [ROADMAP.md](ROADMAP.md)：优先级、依赖、里程碑与发布门槛。
 
-[CONTRIBUTING.md](CONTRIBUTING.md) 说明贡献检查。[THREAT_MODEL.md](THREAT_MODEL.md) 指向架构文档中维护的威胁模型。[SECURITY.md](SECURITY.md) 记录当前限制和漏洞报告流程。如果 GitHub 私密报告功能可用，请使用该功能；否则请先请求保密渠道，不要发布敏感细节。该政策不声称私密报告已启用，也不规定响应 SLA。切勿公开秘密信息或敏感利用细节。
+[CONTRIBUTING.md](CONTRIBUTING.md) 说明贡献检查。[THREAT_MODEL.md](THREAT_MODEL.md) 指向架构文档中维护的威胁模型。[SECURITY.md](SECURITY.md) 记录当前限制和漏洞报告流程。当私密报告启用时，请使用 GitHub security advisory 路径（`security/advisories/new`）；文档化的备用渠道是向维护者发送邮件至 `rodrigo@hangell.org`，主题为 `[CryptoX security]`。该政策不规定响应 SLA。切勿公开秘密信息或敏感利用细节。
 
 请提交小规模、便于审查的变更：检查实现，在关键修复前加入回归/对抗性测试，运行检查，并记录安全假设及 API/格式变更。标识符和代码注释使用英文，提交信息遵循 Conventional Commits 并解释原因。行为改变时，请同步维护五种语言的 README。
 
