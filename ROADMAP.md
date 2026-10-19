@@ -934,14 +934,16 @@ The agent must update phase status only when supported by actual implementation 
 
 ### Baseline evidence and remaining work
 
-This is a local-checkout assessment dated 2026-10-18, not a release or remote CI
+This is an assessment dated 2026-10-18. Remote CI (ubuntu, macOS, Windows test
+matrix and the fuzz/vulnerability job) has been observed passing on `main`; that
+is execution evidence for those jobs, not a release or independent-review
 certification. Preparatory work does not satisfy the Phase 0 exit gate by itself.
 
 | Evidence | What it establishes | What remains open |
 | --- | --- | --- |
 | `go.mod`, `keys/keys.go`, `stream/files.go`, `utils/aes-utils.go` | Inventory: one module, standard-library dependencies, key generation, legacy file operations, compatibility facade. | Reviewed replacement format and public core contracts. |
 | `keys/keys_test.go`, `stream/files_test.go`, `stream/parser_test.go`, `utils/aes-utils_test.go` | Executable tests for the implemented baseline, malformed input, I/O failures, facade behavior, known truncation limits, and concurrent round trips. | Complete security assessment, broader external vectors, and independent review. |
-| `Makefile`, `.github/workflows/ci.yml`, `.golangci.yml` | Local checks and configured multiplatform CI, fuzzing, linting, and vulnerability analysis. | Remote results for the published commit and release controls; configuration is not execution evidence. |
+| `Makefile`, `.github/workflows/ci.yml`, `.golangci.yml` | Local checks and configured multiplatform CI, fuzzing, linting, and vulnerability analysis. Remote CI runs (ubuntu/macOS/Windows and the fuzz job) have been observed passing on `main`. | Release controls, long-running fuzz campaigns, and independent review; passing CI jobs are execution evidence for those jobs, not for release artifacts. |
 | `keys/keys_bench_test.go`, `stream/files_bench_test.go` | Reproducible microbenchmarks for key generation and v1 file operations via `make bench`. | Published performance comparisons and AMD64/ARM64 results with recorded methodology. |
 | `README*.md`, `SECURITY.md` | Implemented features are distinguished from targets; current v1 limits and disclosure procedure are documented. | Resolution of the underlying cryptographic risks. |
 | `ARCHITECTURE.md`, `docs/adr/0001-legacy-validation.md` | Proposed boundaries and a recorded decision for baseline compatibility tests. | Architecture approval, specialist review, and Phase 1 entry requirements. |
