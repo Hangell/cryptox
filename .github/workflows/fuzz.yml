@@ -14,7 +14,7 @@ concurrency:
 
 # Longer, bounded campaigns for the security-critical parsers. The short PR
 # smoke fuzz in ci.yml stays fast; this job runs materially longer on a schedule
-# or on demand. Add the envelope-parser fuzz target here once that parser lands.
+# or on demand.
 jobs:
   fuzz:
     name: Fuzz ${{ matrix.target.fuzz }} (${{ matrix.target.time }})
@@ -28,6 +28,7 @@ jobs:
           - { package: ./stream, fuzz: FuzzDecryptV2, time: 600s }
           - { package: ./aead, fuzz: FuzzOpen, time: 600s }
           - { package: ./aead, fuzz: FuzzSealOpen, time: 600s }
+          - { package: ./envelope, fuzz: FuzzOpen, time: 600s }
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
@@ -53,5 +54,6 @@ jobs:
           path: |
             stream/testdata/fuzz/
             aead/testdata/fuzz/
+            envelope/testdata/fuzz/
           if-no-files-found: ignore
           retention-days: 30
