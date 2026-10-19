@@ -32,6 +32,54 @@ func v2DecryptAll(t *testing.T, ciphertext, key, aad []byte) ([]byte, error) {
 	return io.ReadAll(d)
 }
 
+func TestV2ErrorClassification(t *testing.T) {
+	key := bytes.Repeat([]byte{0x81}, 32)
+	aad := []byte("aad")
+	pt := bytes.Repeat([]byte{0x82}, v2SegmentSize+7)
+	ct := v2Encrypt(t, pt, key, aad)
+
+	// ErrInvalidKey.
+	if _, err := NewEncryptor(&bytes.Buffer{}, make([]byte, 16), aad); !errors.Is(err, ErrInvalidKey) {
+		t.Fatalf("NewEncryptor short key: got %v", err)
+	}
+	if _, err := NewDecryptor(bytes.NewReader(ct), make([]byte, 16), aad); !errors.Is(err, ErrInvalidKey) {
+		t.Fatalf("NewDecryptor short key: got %v", err)
+	}
+
+	// ErrUnsupported: unknown version byte.
+	badVersion := append([]byte(nil), ct...)
+	badVersion[4] ^= 0x01
+	if _, err := NewDecryptor(bytes.NewReader(badVersion), key, aad); !errors.Is(err, ErrUnsupported) {
+		t.Fatalf("unknown version: got %v", err)
+	}
+
+	// ErrMalformed: unknown magic byte.
+	badMagic := append([]byte(nil), ct...)
+	badMagic[0] ^= 0x01
+	if _, err := NewDecryptor(bytes.NewReader(badMagic), key, aad); !errors.Is(err, ErrMalformed) {
+		t.Fatalf("bad magic: got %v", err)
+	}
+
+	// ErrTruncated (header): header shorter than the fixed v2 header.
+	if _, err := NewDecryptor(bytes.NewReader(ct[:5]), key, aad); !errors.Is(err, ErrTruncated) {
+		t.Fatalf("short header: got %v", err)
+	}
+
+	// ErrTruncated (segment): final segment shorter than an authentication tag.
+	// The stream is header || full non-final segment || 23-byte final segment;
+	// removing 13 bytes leaves 10 bytes of the final segment (< 16-byte tag).
+	if _, err := v2DecryptAll(t, ct[:len(ct)-13], key, aad); !errors.Is(err, ErrTruncated) {
+		t.Fatalf("short final segment: got %v", err)
+	}
+
+	// ErrAuthentication: flip a byte inside the first segment ciphertext.
+	badSeg := append([]byte(nil), ct...)
+	badSeg[v2HeaderLen+5] ^= 0x01
+	if _, err := v2DecryptAll(t, badSeg, key, aad); !errors.Is(err, ErrAuthentication) {
+		t.Fatalf("tampered segment: got %v", err)
+	}
+}
+
 func TestEncryptorDecryptorRoundTrip(t *testing.T) {
 	key := bytes.Repeat([]byte{0x5a}, 32)
 	aad := []byte("aad")

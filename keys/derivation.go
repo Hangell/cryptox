@@ -18,6 +18,17 @@ const (
 	derivationLabel = "cryptox/v1/kdf"
 )
 
+// Errors returned by DeriveKey. Callers can classify failures with errors.Is.
+var (
+	// ErrInvalidKeyMaterial indicates root has less than 256 bits of entropy.
+	ErrInvalidKeyMaterial = errors.New("keys: root keying material must be at least 32 bytes")
+	// ErrInvalidPurpose indicates an empty, NUL-containing, non-printable, or
+	// over-long purpose.
+	ErrInvalidPurpose = errors.New("keys: invalid purpose")
+	// ErrInvalidLength indicates the derived length is outside [16, 255*32].
+	ErrInvalidLength = errors.New("keys: invalid derived key length")
+)
+
 // Purpose identifies a key-derivation context. DeriveKey domain-separates every
 // Purpose, so keys derived for different purposes are independent even from the
 // same root material.
@@ -32,14 +43,14 @@ type Purpose string
 // KDF for low-entropy passphrases.
 func DeriveKey(root []byte, purpose Purpose, length int) ([]byte, error) {
 	if len(root) < 32 {
-		return nil, errors.New("keys: root keying material must be at least 32 bytes")
+		return nil, ErrInvalidKeyMaterial
 	}
 	if err := validatePurpose(purpose); err != nil {
 		return nil, err
 	}
 	if length < minDerivedKeyLen || length > maxDerivedKeyLen {
-		return nil, fmt.Errorf("keys: derived key length must be in [%d, %d], got %d",
-			minDerivedKeyLen, maxDerivedKeyLen, length)
+		return nil, fmt.Errorf("%w: must be in [%d, %d], got %d",
+			ErrInvalidLength, minDerivedKeyLen, maxDerivedKeyLen, length)
 	}
 
 	info := make([]byte, 0, len(derivationLabel)+1+len(purpose))
@@ -51,20 +62,20 @@ func DeriveKey(root []byte, purpose Purpose, length int) ([]byte, error) {
 }
 
 // validatePurpose rejects purposes that could make the domain-separation label
-// ambiguous or unreadable.
+// ambiguous or unreadable. Every rejection wraps ErrInvalidPurpose.
 func validatePurpose(p Purpose) error {
 	if len(p) == 0 {
-		return errors.New("keys: purpose must not be empty")
+		return fmt.Errorf("%w: must not be empty", ErrInvalidPurpose)
 	}
 	if len(p) > 255 {
-		return errors.New("keys: purpose must be at most 255 bytes")
+		return fmt.Errorf("%w: must be at most 255 bytes", ErrInvalidPurpose)
 	}
 	for _, b := range []byte(p) {
 		if b == 0x00 {
-			return errors.New("keys: purpose must not contain NUL")
+			return fmt.Errorf("%w: must not contain NUL", ErrInvalidPurpose)
 		}
 		if b < 0x20 || b > 0x7e {
-			return errors.New("keys: purpose must be printable ASCII")
+			return fmt.Errorf("%w: must be printable ASCII", ErrInvalidPurpose)
 		}
 	}
 	return nil
