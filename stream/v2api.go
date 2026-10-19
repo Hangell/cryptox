@@ -15,6 +15,8 @@ import (
 var (
 	// ErrInvalidKey indicates the supplied key is not 32 bytes.
 	ErrInvalidKey = errors.New("stream: key must be 32 bytes")
+	// ErrAADTooLarge indicates the v2 associated data exceeds MaxV2AADSize.
+	ErrAADTooLarge = errors.New("stream: associated data exceeds maximum size")
 	// ErrAuthentication indicates a segment failed authentication or the
 	// stream was modified; no plaintext is returned in this case.
 	ErrAuthentication = errors.New("stream: authentication failed")
@@ -49,11 +51,15 @@ type Encryptor struct {
 }
 
 // NewEncryptor returns an Encryptor writing to w with a 32-byte key and
-// optional associated data. The v2 header is written immediately; on error the
-// returned Encryptor is nil and w must not be reused for this stream.
+// optional associated data no larger than MaxV2AADSize. The v2 header is
+// written immediately; on error the returned Encryptor is nil and w must not
+// be reused for this stream. Oversized associated data returns ErrAADTooLarge.
 func NewEncryptor(w io.Writer, key, aad []byte) (*Encryptor, error) {
 	if len(key) != 32 {
 		return nil, ErrInvalidKey
+	}
+	if err := validateV2AAD(aad); err != nil {
+		return nil, err
 	}
 	var salt [v2SaltLen]byte
 	var prefix [v2NoncePrefixLen]byte
@@ -171,11 +177,15 @@ type Decryptor struct {
 }
 
 // NewDecryptor returns a Decryptor reading the v2 stream from r with a 32-byte
-// key and the same associated data used at encryption. The header is read and
-// validated immediately.
+// key and the same associated data used at encryption. Associated data must be
+// no larger than MaxV2AADSize; otherwise it returns ErrAADTooLarge before
+// reading the stream. The header is read and validated immediately.
 func NewDecryptor(r io.Reader, key, aad []byte) (*Decryptor, error) {
 	if len(key) != 32 {
 		return nil, ErrInvalidKey
+	}
+	if err := validateV2AAD(aad); err != nil {
+		return nil, err
 	}
 
 	br := bufio.NewReaderSize(r, v2SegmentSize+v2TagSize)
@@ -239,6 +249,9 @@ func (d *Decryptor) nextSegment() error {
 		// short (truncation) or GCM authentication fails; appended data is
 		// never silently accepted after the final segment.
 		if _, perr := d.r.Peek(1); perr != nil {
+			if !errors.Is(perr, io.EOF) {
+				return fmt.Errorf("v2: peek segment: %w", perr)
+			}
 			final = true
 		}
 	case io.ErrUnexpectedEOF:

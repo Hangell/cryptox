@@ -81,15 +81,16 @@ human specialist focus on the remaining proof and parameter work.
 | Nonce prefix | **Layout and collision arithmetic are consistent under uniform independent draws.** | Code obtains 7 random bytes per stream. The relevant repeated pair is `salt ‖ prefix` (312 bits); the birthday upper estimate is `q(q−1)/2^313`, approximately `2^-249` at `q=2^32`. This estimates pair repetition, not the full AE advantage. The proof must also account for a repeated salt yielding a repeated derived key, even when prefixes differ. |
 | Counter / final flag | **Structural uniqueness within one stream is supported by the code.** | IV bytes are prefix (7) ‖ counter (4, big-endian) ‖ final flag (1). `checkCounter` permits indices `0..2^32−1`; distinct indices produce distinct IVs, and GCM authenticates the IV-dependent tag. This is not a proof of the global usage bound. |
 | HKDF | **RFC 5869 implementation path passed targeted package tests; KDF security reduction remains open.** | Stream derives 32 bytes using HMAC-SHA-256 Extract/Expand. `go test ./keys ./stream` passed and the repository includes RFC 5869 vectors plus Wycheproof HKDF vectors for `keys`. HS20's abstract KDF assumption still needs to be related explicitly to this HKDF use and the caller's root-key entropy. |
-| Proposed per-key budget | **Not approved as written.** | The one-shot GCM budget and v2 stream budget need separate accounting. v2 AAD is placed in HKDF `info`, not in GCM's GHASH AAD input; its processing/allocation bound must be specified separately. A complete bound must combine KDF distinguishing advantage, GCM advantage over all relevant queries/blocks/verifications, randomizer collisions, and multi-user aggregation. The `2^32` derived-keys-per-root limit also lacks a derivation in the package. The verification budget limits attempts but does not bound cumulative bytes/blocks submitted to `Open`/stream decryption. All proposed totals remain caller-enforced and unvalidated. |
+| Proposed per-key budget | **Not approved as written.** | The one-shot GCM budget and v2 stream budget need separate accounting. v2 AAD is placed in HKDF `info`, not in GCM's GHASH AAD input; its processing/allocation is now operationally capped at 64 KiB by the v2 APIs. A complete bound must combine KDF distinguishing advantage, GCM advantage over all relevant queries/blocks/verifications, randomizer collisions, and multi-user aggregation. The `2^32` derived-keys-per-root limit also lacks a derivation in the package. The verification budget limits attempts but does not bound cumulative bytes/blocks submitted to `Open`/stream decryption. All proposed totals remain caller-enforced and unvalidated. |
 
 ### Findings and conclusion (AI assessment)
 
-1. **Blocking for card #71 — no concrete advantage calculation.** The documents
-   do not derive a numeric multi-user bound for the stated root-key budgets and
-   exact query limits. Keep the proposed values marked experimental; do not
-   freeze the format or describe the budget as validated on this basis.
-2. **Needs correction/clarification before relying on the budget — AAD units.**
+1. **Open technical blocker for #31/#72 — no concrete advantage calculation.**
+   The documents do not derive a numeric multi-user bound for the stated
+   root-key budgets and exact query limits. Keep the proposed values marked
+   experimental; do not freeze the format or describe the budget as validated
+   on this basis.
+2. **Follow-up required before relying on the budget — AAD units.**
    `key-usage-limits.md` says AAD contributes to GCM block/tag bounds. That is
    true for one-shot `aead.Seal`/`Open`; v2 stream AAD is instead input to HKDF
    `info`. State separate accounting and bound the accepted AAD length and its
@@ -111,6 +112,14 @@ This assessment is not independent and does not itself fulfill the specialist
 review. It does not approve the format for freeze. The project owner may waive
 the specialist-review requirement for project tracking, but that waiver cannot
 be treated as technical confirmation of the proposed budgets.
+
+### Follow-up to the AI assessment
+
+The subsequent #31 work adds a 64 KiB operational cap for v2 AAD and separates
+that HKDF-input/resource limit from GCM's GHASH accounting. It also withdraws
+the earlier simplified combined GCM advantage claim. This does not resolve the
+per-key cryptographic budget: aggregate failed-decryption work and the exact
+HS20 multi-user bound still lack a validated numeric limit.
 
 ### Human project-owner gate — authorization recorded
 

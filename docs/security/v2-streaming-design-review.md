@@ -67,7 +67,10 @@ domainSep   = "cryptox/v2/stream" || 0x00 || version || suite || 0x00 || AAD
   (`domainSep || 0x00 || version || suite || 0x00 || AAD`); it is *not*
   Tink's `info = AAD` construction, so the derived key and segment ciphertexts
   are not wire-compatible with Tink even though the IV/final-flag layout
-  mirrors it. Per-segment AEAD AAD is empty.
+  mirrors it. Per-segment AEAD AAD is empty. The API rejects AAD larger than
+  65,536 bytes (`stream.MaxV2AADSize`) to bound HKDF-info processing and the
+  associated buffer allocation. This is an operational input limit, not a
+  cryptographic usage bound.
 - `salt` (256-bit) and `noncePrefix` (56-bit) are fresh per stream, so
   accidental reuse of a caller-supplied raw key across streams derives a
   different per-stream key with overwhelming probability.
@@ -108,10 +111,11 @@ Decryption must reject:
 
 Per-key usage guidance: the format publishes **per-stream** mechanical limits
 only (see above). CryptoX does not currently advertise a validated per-key
-bound; a concrete multi-key/multi-user limit remains an open item from the
-independent review (see §8). Until such a bound is established, operators
-should limit total bytes per key conservatively and treat the per-stream
-`<= 2^48` byte bound as a stream-level, not key-level, guarantee. See
+bound; a concrete multi-key/multi-user limit remains unresolved because the
+owner waived #71's tracking requirement without an independent review (see §8).
+Until such a bound is established, operators should limit total bytes per key
+conservatively and treat the per-stream `<= 2^48` byte bound as a stream-level,
+not key-level, guarantee. See
 [`docs/security/key-usage-limits.md`](key-usage-limits.md) for the full
 unit/assumption/enforcement table.
 
@@ -140,10 +144,10 @@ layout, but byte-for-byte cross-compatibility with Tink is not claimed.
 An **internal** (automated-agent) design review was performed and recorded in
 [`docs/security/v2-independent-review.md`](v2-independent-review.md); its four
 findings are resolved in this document and in the implementation. That internal
-review does **not** satisfy the independent specialist review (#71), which
-remains outstanding and is the subject of
-[`v2-specialist-review-package.md`](v2-specialist-review-package.md). The
-following items must be confirmed by a specialist before any freeze:
+review does **not** satisfy an independent specialist review. Card #71 was
+administratively closed by owner waiver without a review taking place; the
+specialist assessment itself was not performed. The following items remain
+unresolved and must be confirmed before any freeze:
 
 1. Concrete multi-user / multi-key bounds for the chosen parameters (HS20), and
    the resulting **per-key** usage limit to publish (the per-stream limits are

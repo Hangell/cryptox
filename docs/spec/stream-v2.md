@@ -45,8 +45,11 @@ downgraded or reinterpreted. The legacy `SYM1` format is never reinterpreted as
 
 ## 3. Key derivation
 
-Let `AAD` be the caller-supplied associated data (possibly empty). The per-stream
-256-bit key is:
+Let `AAD` be the caller-supplied associated data (possibly empty and at most
+65,536 bytes). The v2 APIs reject larger values with `ErrAADTooLarge` before
+processing the stream. This is an operational input-size limit that bounds the
+HKDF `info` buffer; it is not a cryptographic per-key usage bound. The
+per-stream 256-bit key is:
 
 ```text
 info   = "cryptox/v2/stream" ‖ 0x00 ‖ version ‖ suite ‖ 0x00 ‖ AAD
@@ -62,7 +65,8 @@ derivedKey = HKDF-SHA-256(ikm = key, salt = header.salt, info = info, L = 32)
 
 This `info` layout is CryptoX-specific. It is **not** Tink's `info = AAD`
 construction, so for the same `(key, salt, AAD)` the derived key differs from
-Tink's and the ciphertext is not Tink wire-compatible.
+Tink's and the ciphertext is not Tink wire-compatible. The AAD bytes are part
+of HKDF `info`; they are not passed as GCM AAD to each segment.
 
 ## 4. Segmentation
 
