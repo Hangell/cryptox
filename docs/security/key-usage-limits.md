@@ -1,62 +1,69 @@
 # Key and nonce usage limits
 
 Status: experimental. This document records the **structural** limits that the
-implementation enforces or assumes, and a **proposed** concrete per-key
-cryptographic budget. The proposal is derived below from standard GCM and
-random-nonce bounds; it is subject to confirmation by the independent
-specialist review (#71) and is not a proof.
+implementation enforces or assumes, and a **proposed** per-key cryptographic
+budget. Every proposed figure remains a **proposal** until the independent
+specialist review (#71) confirms or reduces it; nothing here is a proof or a
+production guarantee.
 
 ## Definitions
 
 - **Structural limit** — a bound derived from the encoding (counter width,
-  nonce length, segment layout) that the implementation enforces mechanically.
+  nonce length, segment layout) that the code enforces mechanically.
 - **Cryptographic limit** — a bound on the total adversarial advantage across
-  many keys/messages. The proposal below uses conservative single-user GCM
-  bounds and is marked for specialist (HS20 multi-user/multi-key) validation.
-- **Enforcement** — where the bound is checked in code, or where the caller is
-  responsible because the API is stateless.
+  messages, bytes/blocks, AAD, and failed authentication attempts. In stateless
+  APIs the code cannot count these, so enforcement is the caller's
+  responsibility.
+- **Scope** — whether the limit is per **key** (a single AES/GCM master key),
+  per **root** (a `keys` derivation root), or per **stream** (one `CXS2`
+  stream).
 
 ## Usage limits
 
-| Component | Unit | Bound | Type | Enforcement |
-| --- | --- | --- | --- | --- |
-| `aead.Seal` (AES-256-GCM, one-shot) | invocations per key | ≤ 2^32 calls | Cryptographic (96-bit random nonce collision ≈ q²/2^97 ≤ 2^-33 at q=2^32) | Not enforced (stateless API) — caller responsibility |
-| `aead.Seal` | total plaintext bytes per key | ≤ 2^48 bytes (256 TiB) | Cryptographic (GCM block bound, see below) | Not enforced — caller responsibility |
-| `aead.Open` | forgery attempts per key | ≤ 2^32 | Cryptographic (tag verification bound) | Not enforced — caller responsibility |
-| v2 stream (`CXS2`) | segments per stream | `n ≤ 2^32` | Structural (32-bit counter) | Enforced: `checkCounter` rejects `> MaxUint32` |
-| v2 stream | bytes per stream | `n × 64 KiB ≤ 2^48` bytes | Structural (counter × segment size) | Enforced via the segment counter limit |
-| v2 stream | streams per master key | ≤ 2^32 streams | Cryptographic (312-bit randomizer collision ≈ q²/2^313) | Not enforced — caller responsibility |
-| v2 stream | total plaintext bytes per master key | ≤ 2^48 bytes | Cryptographic (proposed; HS20 validation #71) | Not enforced — caller responsibility |
-| `keys.DeriveKey` / `keys.DeriveVersioned` | derived keys per root | ≤ 2^32 | Cryptographic (HKDF output independence) | Not enforced — caller responsibility |
+Each row records scope, unit, bound, type, enforcement, and the
+assumptions/formula/source behind the bound.
+
+| Component | Scope | Unit | Bound | Type | Enforcement | Assumptions / formula / source |
+| --- | --- | --- | --- | --- | --- | --- |
+| `aead.Seal` | per key | invocations | ≤ 2^32 | Cryptographic | Caller (stateless) | 96-bit random nonce; collision ≈ q²/2^97 ≤ 2^-33 at q=2^32 (birthday bound) |
+| `aead.Seal` | per key | total plaintext bytes | ≤ 2^48 (256 TiB) | Cryptographic | Caller (stateless) | GCM block bound: σ ≤ 2^44 blocks ⇒ (σ+q)²/2^129 ≤ 2^-41 (improved GCM bounds) |
+| `aead.Open` | per key | forgery attempts | ≤ 2^32 | Cryptographic | Caller (stateless) | 128-bit tag; polynomial auth term stays below 2^-40 at q_v=2^32 |
+| `aead.Seal`/`Open` | per key | AAD bytes | ≤ 2^48 total | Cryptographic | Caller (stateless) | AAD is authenticated and contributes to the same block/tag bounds as plaintext |
+| v2 stream | per stream | segments | `n ≤ 2^32` | Structural | Enforced (`checkCounter`) | 32-bit big-endian segment counter |
+| v2 stream | per stream | plaintext bytes | `n × 64 KiB ≤ 2^48` | Structural | Enforced (counter limit) | 64 KiB segments |
+| v2 stream | per master key | streams | ≤ 2^32 | Cryptographic | Caller (stateless) | 312-bit `salt ‖ noncePrefix`; collision ≈ q²/2^313 (negligible) |
+| v2 stream | per master key | total plaintext bytes | ≤ 2^48 | Cryptographic (proposed) | Caller (stateless) | HS20 multi-key bound not yet confirmed (#71) |
+| `keys.DeriveKey` / `DeriveVersioned` | per root | derived keys | ≤ 2^32 | Cryptographic | Caller (stateless) | HKDF output independence; domain-separated `info` |
 
 ## Proposed per-key cryptographic budget
 
 The proposal is built from two standard terms and then applied to the v2
-construction.
+construction. All figures are **proposals** pending #71.
 
 1. **Nonce/randomizer collision.** With `q` fresh random values of bit length
    `n`, the collision probability is approximately `q² / 2^(n+1)`.
    - One-shot `aead.Seal` uses a 96-bit nonce (`n = 96`): at `q = 2^32` the
      collision probability is `2^64 / 2^97 = 2^-33`.
    - A v2 stream uses a 312-bit `salt ‖ noncePrefix` (`n = 312`): at
-     `q = 2^32` streams the collision probability is `2^64 / 2^313 = 2^-249`,
-     negligible. Each stream then derives a fresh per-stream GCM key, so
-     accidental nonce reuse across streams does not reuse a nonce under one
-     GCM key.
+     `q = 2^32` streams the collision probability is `2^64 / 2^313 = 2^-249`.
+     Each stream derives a fresh per-stream GCM key, so accidental nonce reuse
+     across streams does not reuse a nonce under one GCM key.
 
-2. **GCM block bound.** For AES-GCM the adversarial advantage grows
+2. **GCM block/tag bound.** For AES-GCM the adversarial advantage grows
    polynomially in the total number of 16-byte blocks processed (`σ`), the
    number of encryption queries (`q`), and the number of forgery attempts
-   (`q_v`), all over the 128-bit tag/block size (the leading term is of order
-   `(σ + q)² / 2^129`). Capping `σ ≤ 2^44` blocks (`= 2^48` bytes), `q ≤ 2^32`,
-   and `q_v ≤ 2^32` keeps every polynomial term below `2^-40`; the combined
-   advantage is then dominated by the `2^-33` nonce-collision term and stays
+   (`q_v`), all over the 128-bit block/tag size (the leading term is of order
+   `(σ + q)² / 2^129`). AAD participates in the same polynomial terms as
+   plaintext, so it is folded into the byte/block budget rather than tracked
+   separately. Capping `σ ≤ 2^44` blocks (`= 2^48` bytes, plaintext + AAD),
+   `q ≤ 2^32`, and `q_v ≤ 2^32` keeps every polynomial term below `2^-40`; the
+   combined advantage is dominated by the `2^-33` nonce-collision term and stays
    below roughly `2^-32`.
 
 **Proposed budget (subject to #71):**
 
-- `aead.Seal`/`aead.Open`: ≤ **2^32 invocations**, ≤ **2^48 plaintext bytes**,
-  and ≤ **2^32 forgery attempts** per key, whichever is reached first.
+- `aead.Seal`/`aead.Open`: ≤ **2^32 invocations**, ≤ **2^48 plaintext + AAD
+  bytes**, and ≤ **2^32 forgery attempts** per key, whichever is reached first.
 - v2 stream: ≤ **2^32 streams** and ≤ **2^48 plaintext bytes in total** across
   all streams per master key. The `2^48` byte figure is therefore adopted as a
   key-level cap, not only a per-stream cap.
@@ -64,15 +71,14 @@ construction.
 
 These figures are **proposals** computed from conservative single-user bounds.
 The HS20 multi-user/multi-key analysis for the STREAM construction must confirm
-(or tighten) them before they are treated as final (#71); until then they are
-experimental guidance, not a production guarantee.
+(or reduce) them before they are treated as final (#71).
 
 ## Caller responsibilities for stateless APIs
 
 `aead.Seal`/`aead.Open` and the `keys` derivation functions hold no mutable
 state and cannot count invocations. Callers must therefore:
 
-- rotate keys before 2^32 `Seal` calls, 2^48 total plaintext bytes, or 2^32
+- rotate keys before 2^32 `Seal` calls, 2^48 total plaintext+AAD bytes, or 2^32
   forgery attempts under a single key;
 - keep the total plaintext across all v2 streams under a master key at or
   below 2^48 bytes;
@@ -92,11 +98,20 @@ Counter limits are tested without creating giant files:
 - `stream.TestV2...` IV-uniqueness checks — the per-segment IV is unique across
   counters and does not repeat within a stream.
 
-These tests verify the mechanical counter guard, not the cryptographic bound.
+These tests verify the **mechanical** counter guard only; they do not prove the
+cryptographic bounds above.
 
-## Residual item
+## Handoff to the independent review (#71)
 
-The concrete HS20 multi-user/multi-key bound and any resulting refinement of the
-per-key budget above remain **open** and are reserved to the independent
-specialist review (#71). Until #71 confirms or replaces these figures, this
-document must not be read as a production key budget.
+The independent specialist review must record, at minimum:
+
+- the identity of the independent reviewer, the commit and the artifacts
+  examined, and the hypotheses used;
+- the concrete HS20 multi-user/multi-key bound for the chosen parameters;
+- which proposed figures above were **confirmed**, and which were **reduced**
+  (with the new value);
+- any remaining findings or open items.
+
+Until #71 produces that record and the final values are propagated consistently
+across this document, the v2 design review, the spec, and the READMEs, the
+per-key budget is **not final**, and card #31 must not be closed as `done`.
